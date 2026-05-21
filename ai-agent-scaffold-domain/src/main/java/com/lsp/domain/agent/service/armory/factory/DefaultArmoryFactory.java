@@ -1,6 +1,7 @@
 package com.lsp.domain.agent.service.armory.factory;
 
 import cn.bugstack.wrench.design.framework.tree.StrategyHandler;
+import com.google.adk.agents.BaseAgent;
 import com.lsp.domain.agent.model.entity.ArmoryCommandEntity;
 import com.lsp.domain.agent.model.valobj.AiAgentRegisterVO;
 import com.lsp.domain.agent.service.armory.node.RootNode;
@@ -52,6 +53,11 @@ public class DefaultArmoryFactory {
          * 对话模型配置
          */
         private ChatModel chatModel;
+
+        /**
+         * 子智能体配置组
+         */
+        private Map<String, BaseAgent> agentGroup = new HashMap<>();
 
         private Map<String, Object> dataObjects = new HashMap<>();
 
