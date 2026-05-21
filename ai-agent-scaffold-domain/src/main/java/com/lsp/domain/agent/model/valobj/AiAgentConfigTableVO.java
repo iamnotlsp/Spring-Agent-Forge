@@ -65,6 +65,7 @@ public class AiAgentConfigTableVO {
 
         private List<AgentWorkflow> agentWorkflows;
 
+        //大模型基础配置
         @Data
         public static class AiApi {
             private String baseUrl;

@@ -14,7 +14,7 @@ import java.util.List;
 
 /**
  * @author 林善鹏
- * @description
+ * @description 接受AI Agent配置表，遍历每一份智能体配置，然后交给装配流程处理
  * @date 2026-05-21 15:10
  */
 @Slf4j
