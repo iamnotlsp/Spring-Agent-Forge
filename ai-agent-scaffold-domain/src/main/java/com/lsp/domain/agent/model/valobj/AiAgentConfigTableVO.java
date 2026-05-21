@@ -75,17 +75,18 @@ public class AiAgentConfigTableVO {
 
         }
 
-        /**
-         * 工具配置，支持两种 MCP 接入方式
-         * SSE   远程 MCP 服务，比如百度搜索 MCP
-         * Stdio 本地 MCP 服务，比如自己写的本地工具服务
-         */
+        //对话模型配置，包括模型名称和工具 MCP 配置
         @Data
         public static class ChatModel {
 
             private String model;
             private List<ToolMcp> toolMcpList;
 
+            /**
+             * 工具配置，支持两种 MCP 接入方式
+             * SSE   远程 MCP 服务，比如百度搜索 MCP
+             * Stdio 本地 MCP 服务，比如自己写的本地工具服务
+             */
             @Data
             public static class ToolMcp {
 
