@@ -6,7 +6,9 @@ import com.lsp.domain.agent.model.valobj.AiAgentRegisterVO;
 import com.lsp.domain.agent.service.armory.factory.DefaultArmoryFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationContext;
 
+import javax.annotation.Resource;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
@@ -21,9 +23,21 @@ public abstract class AbstractArmorySupport extends AbstractMultiThreadStrategyR
 
     protected final Logger log = LoggerFactory.getLogger(AbstractArmorySupport.class);
 
+    /** 注入 Spring 容器 */
+    @Resource
+    protected ApplicationContext applicationContext;
+
     @Override
     protected void multiThread(ArmoryCommandEntity requestParameter, DefaultArmoryFactory.DynamicContext dynamicContext) throws ExecutionException, InterruptedException, TimeoutException {
 
+    }
+
+    /** 根据 Bean 名称，从 Spring 容器中取出对应对象
+     *  这样所有规则树节点就能根据 Bean 名称动态获取 Spring 容器里的节点对象
+     * */
+
+    protected <T> T getBean(String beanName) {
+        return (T) applicationContext.getBean(beanName);
     }
 
 }

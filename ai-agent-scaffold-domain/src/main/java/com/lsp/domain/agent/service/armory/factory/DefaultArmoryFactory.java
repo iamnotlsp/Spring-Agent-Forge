@@ -3,6 +3,7 @@ package com.lsp.domain.agent.service.armory.factory;
 import cn.bugstack.wrench.design.framework.tree.StrategyHandler;
 import com.google.adk.agents.BaseAgent;
 import com.lsp.domain.agent.model.entity.ArmoryCommandEntity;
+import com.lsp.domain.agent.model.valobj.AiAgentConfigTableVO;
 import com.lsp.domain.agent.model.valobj.AiAgentRegisterVO;
 import com.lsp.domain.agent.service.armory.node.RootNode;
 import lombok.AllArgsConstructor;
@@ -14,12 +15,14 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
- * @description 装配流程的工厂：返回整个装配链的入口节点rootNode，并且设置了一个上下文对象用来传递结果
  * @author 林善鹏
+ * @description 装配流程的工厂：返回整个装配链的入口节点rootNode，并且设置了一个上下文对象用来传递结果
  * @date 2026-05-21 15:48
  */
 
@@ -55,9 +58,14 @@ public class DefaultArmoryFactory {
         private ChatModel chatModel;
 
         /**
-         * 子智能体配置组
+         * 子智能体配置组(有哪几个智能体)
          */
         private Map<String, BaseAgent> agentGroup = new HashMap<>();
+
+        /**
+         * 智能体工作流配置 定义多个子 Agent 怎么组合
+         */
+        private List<AiAgentConfigTableVO.Module.AgentWorkflow> agentWorkflows = new ArrayList<>();
 
         private Map<String, Object> dataObjects = new HashMap<>();
 
