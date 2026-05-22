@@ -6,6 +6,9 @@ import com.lsp.domain.agent.model.valobj.AiAgentRegisterVO;
 import com.lsp.domain.agent.service.armory.factory.DefaultArmoryFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.beans.factory.support.BeanDefinitionBuilder;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.ApplicationContext;
 
 import javax.annotation.Resource;
@@ -32,10 +35,37 @@ public abstract class AbstractArmorySupport extends AbstractMultiThreadStrategyR
 
     }
 
+    /**
+     * 通用的Bean注册方法
+     * @param beanName  Bean名称
+     * @param beanClass Bean类型
+     * @param <T>       Bean类型
+     *
+     * 使用：registerBean 是把运行时创建出来的工作流 Agent 对象动态注册到 Spring 容器中，方便后续通过名称统一获取和复用。
+     */
+    protected synchronized <T> void registerBean(String beanName, Class<T> beanClass, T beanInstance) {
+        DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) applicationContext.getAutowireCapableBeanFactory();
+
+        // 注册Bean
+        BeanDefinitionBuilder beanDefinitionBuilder = BeanDefinitionBuilder.genericBeanDefinition(beanClass, () -> beanInstance);
+        BeanDefinition beanDefinition = beanDefinitionBuilder.getRawBeanDefinition();
+        beanDefinition.setScope(BeanDefinition.SCOPE_SINGLETON);
+
+        // 如果Bean已存在，先移除
+        if (beanFactory.containsBeanDefinition(beanName)) {
+            beanFactory.removeBeanDefinition(beanName);
+        }
+
+        // 注册新的Bean
+        beanFactory.registerBeanDefinition(beanName, beanDefinition);
+
+        log.info("成功注册Bean: {}", beanName);
+    }
+
+
     /** 根据 Bean 名称，从 Spring 容器中取出对应对象
      *  这样所有规则树节点就能根据 Bean 名称动态获取 Spring 容器里的节点对象
      * */
-
     protected <T> T getBean(String beanName) {
         return (T) applicationContext.getBean(beanName);
     }
