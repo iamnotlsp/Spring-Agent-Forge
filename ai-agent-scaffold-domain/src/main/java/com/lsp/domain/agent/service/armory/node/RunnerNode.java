@@ -1,6 +1,7 @@
 package com.lsp.domain.agent.service.armory.node;
 
 import cn.bugstack.wrench.design.framework.tree.StrategyHandler;
+import com.google.adk.agents.BaseAgent;
 import com.google.adk.agents.SequentialAgent;
 import com.google.adk.runner.InMemoryRunner;
 import com.lsp.domain.agent.model.entity.ArmoryCommandEntity;
@@ -32,11 +33,11 @@ public class RunnerNode extends AbstractArmorySupport {
         String agentName = agent.getAgentName();
         String agentDesc = agent.getAgentDesc();
 
-        // 获取上下文对象
-        SequentialAgent sequentialAgent = dynamicContext.getSequentialAgent();
+        // 从agentGroup得到最后一个节点的Agent，也就是整个工作流的主Agent
+        BaseAgent rootAgent = dynamicContext.getAgentGroup().get(dynamicContext.getRootAgentName());
 
         // 创建 InMemoryRunner
-        InMemoryRunner runner = new InMemoryRunner(sequentialAgent, appName);
+        InMemoryRunner runner = new InMemoryRunner(rootAgent, appName);
 
         AiAgentRegisterVO aiAgentRegisterVO = AiAgentRegisterVO.builder()
                 .appName(appName)

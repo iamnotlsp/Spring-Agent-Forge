@@ -56,9 +56,9 @@ public class DefaultArmoryFactory {
         private ChatModel chatModel;
 
         /**
-         * 当做最后一个智能体节点
+         * 最后一个智能体节点名字
          */
-        private SequentialAgent sequentialAgent;
+        private String rootAgentName;
 
         /**
          * 子智能体配置组(有哪几个智能体)

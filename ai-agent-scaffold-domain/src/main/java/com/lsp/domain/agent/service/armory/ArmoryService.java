@@ -14,7 +14,7 @@ import java.util.List;
 
 /**
  * @author 林善鹏
- * @description 接受AI Agent配置表，遍历每一份智能体配置，然后交给装配流程处理
+ * @description 接受 AI Agent配置表，遍历每一份智能体配置，为每一个智能体搭建上下文，然后交给同一套装配流程处理
  * @date 2026-05-21 15:10
  */
 @Slf4j
@@ -25,6 +25,7 @@ public class ArmoryService implements IArmoryService {
 
     @Override
     public void acceptArmoryAgents(List<AiAgentConfigTableVO> tables) throws Exception {
+        // 遍历每一份智能体配置，为每一个智能体搭建上下文，然后交给同一套装配流程处理
         for (AiAgentConfigTableVO table : tables) {
             StrategyHandler<ArmoryCommandEntity, DefaultArmoryFactory.DynamicContext, AiAgentRegisterVO> handler = defaultArmoryFactory.armoryStrategyHandler();
             handler.apply(
