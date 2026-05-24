@@ -8,9 +8,11 @@ import com.lsp.domain.agent.model.valobj.AiAgentConfigTableVO;
 import com.lsp.domain.agent.model.valobj.AiAgentRegisterVO;
 import com.lsp.domain.agent.service.armory.AbstractArmorySupport;
 import com.lsp.domain.agent.service.armory.factory.DefaultArmoryFactory;
+import com.lsp.domain.agent.service.armory.node.RunnerNode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.util.List;
 
 /**
@@ -23,6 +25,9 @@ import java.util.List;
 @Slf4j
 @Service("sequentialAgentNode")
 public class SequentialAgentNode extends AbstractArmorySupport {
+
+    @Resource
+    private RunnerNode runnerNode;
 
     @Override
     protected AiAgentRegisterVO doApply(ArmoryCommandEntity requestParameter, DefaultArmoryFactory.DynamicContext dynamicContext) throws Exception {
@@ -56,8 +61,8 @@ public class SequentialAgentNode extends AbstractArmorySupport {
 
     @Override
     public StrategyHandler<ArmoryCommandEntity, DefaultArmoryFactory.DynamicContext, AiAgentRegisterVO> get(ArmoryCommandEntity requestParameter, DefaultArmoryFactory.DynamicContext dynamicContext) throws Exception {
-        // 目前串行工作流作为兜底，不进行路由，直接结束
-        return defaultStrategyHandler;
+        // 目前串行工作流作为兜底，到最后执行节点
+        return runnerNode;
     }
 
 }

@@ -39,3 +39,4 @@ build/
 /.idea/
 /.mvn/
 /ai-agent-scaffold-app/src/test/
+/docs/dev-ops/api/curl.sh

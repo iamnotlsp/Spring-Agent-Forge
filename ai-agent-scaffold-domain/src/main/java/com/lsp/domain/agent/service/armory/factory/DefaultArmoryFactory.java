@@ -2,6 +2,7 @@ package com.lsp.domain.agent.service.armory.factory;
 
 import cn.bugstack.wrench.design.framework.tree.StrategyHandler;
 import com.google.adk.agents.BaseAgent;
+import com.google.adk.agents.SequentialAgent;
 import com.lsp.domain.agent.model.entity.ArmoryCommandEntity;
 import com.lsp.domain.agent.model.valobj.AiAgentConfigTableVO;
 import com.lsp.domain.agent.model.valobj.AiAgentRegisterVO;
@@ -53,6 +54,11 @@ public class DefaultArmoryFactory {
          * 对话模型配置
          */
         private ChatModel chatModel;
+
+        /**
+         * 当做最后一个智能体节点
+         */
+        private SequentialAgent sequentialAgent;
 
         /**
          * 子智能体配置组(有哪几个智能体)
