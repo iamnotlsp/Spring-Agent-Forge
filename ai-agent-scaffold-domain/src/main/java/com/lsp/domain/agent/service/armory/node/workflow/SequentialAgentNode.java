@@ -52,8 +52,6 @@ public class SequentialAgentNode extends AbstractArmorySupport {
         //最后放入上下文agentGroup，供其他工作流使用
         dynamicContext.getAgentGroup().put(agentWorkflow.getName(), sequentialAgent);
 
-        // 作为最后的Agent，记录当前构建的 Agent 名称为 rootAgentName
-        dynamicContext.setRootAgentName(agentWorkflow.getName());
 
         // 注册到 Spring 容器
         // 使最后兜底的sequentialAgent装配完成后作为主 Agent，能被其他模块通过名称获取

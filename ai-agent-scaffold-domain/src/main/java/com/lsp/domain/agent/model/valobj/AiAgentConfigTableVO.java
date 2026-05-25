@@ -1,5 +1,6 @@
 package com.lsp.domain.agent.model.valobj;
 
+import com.google.adk.runner.Runner;
 import lombok.Data;
 
 import java.util.List;
@@ -64,6 +65,9 @@ public class AiAgentConfigTableVO {
         private List<Agent> agents;
 
         private List<AgentWorkflow> agentWorkflows;
+
+        // runner也在yml中设置
+        private Runner runner;
 
         //大模型基础配置
         @Data
@@ -149,6 +153,14 @@ public class AiAgentConfigTableVO {
             private String description;
             private Integer maxIterations = 3;
 
+        }
+
+        /**
+         * Runner 配置，定义最后执行节点的 Runner 是什么
+         */
+        @Data
+        public static class Runner {
+            private String agentName;
         }
     }
 }

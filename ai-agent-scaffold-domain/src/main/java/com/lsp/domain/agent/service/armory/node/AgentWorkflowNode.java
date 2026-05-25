@@ -26,6 +26,8 @@ public class AgentWorkflowNode extends AbstractArmorySupport {
     private ParallelAgentNode parallelAgentNode;
     @Resource
     private SequentialAgentNode sequentialAgentNode;
+    @Resource
+    private RunnerNode runnerNode;
 
     @Override
     protected AiAgentRegisterVO doApply(ArmoryCommandEntity requestParameter, DefaultArmoryFactory.DynamicContext dynamicContext) throws Exception {
@@ -34,8 +36,9 @@ public class AgentWorkflowNode extends AbstractArmorySupport {
         AiAgentConfigTableVO aiAgentConfigTableVO = requestParameter.getAiAgentConfigTableVO();
         List<AiAgentConfigTableVO.Module.AgentWorkflow> agentWorkflows = aiAgentConfigTableVO.getModule().getAgentWorkflows();
 
+        //没有工作流直接路由到runnerNode节点继续执行
         if (null == agentWorkflows || agentWorkflows.isEmpty()) {
-            throw new RuntimeException("agentWorkflows is null");
+            return router(requestParameter, dynamicContext);
         }
 
         // 将多个子智能体工作流方式放入动态上下文中，供后续节点使用
@@ -48,6 +51,13 @@ public class AgentWorkflowNode extends AbstractArmorySupport {
     public StrategyHandler<ArmoryCommandEntity, DefaultArmoryFactory.DynamicContext, AiAgentRegisterVO> get(ArmoryCommandEntity armoryCommandEntity, DefaultArmoryFactory.DynamicContext dynamicContext) throws Exception {
         /* 从上下文里拿初始的工作流配置 */
         List<AiAgentConfigTableVO.Module.AgentWorkflow> agentWorkflows = dynamicContext.getAgentWorkflows();
+
+
+        // 如设置没有工作流则默认则直接跳过工作流节点，路由至runnerNode
+        if (null == agentWorkflows || agentWorkflows.isEmpty()){
+            return runnerNode;
+        }
+
         /* 取第一个工作流 */
         AiAgentConfigTableVO.Module.AgentWorkflow agentWorkflow = agentWorkflows.get(0);
 

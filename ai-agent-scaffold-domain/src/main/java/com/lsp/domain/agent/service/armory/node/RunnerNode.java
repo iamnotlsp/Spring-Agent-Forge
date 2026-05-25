@@ -9,7 +9,11 @@ import com.lsp.domain.agent.model.valobj.AiAgentConfigTableVO;
 import com.lsp.domain.agent.model.valobj.AiAgentRegisterVO;
 import com.lsp.domain.agent.service.armory.AbstractArmorySupport;
 import com.lsp.domain.agent.service.armory.factory.DefaultArmoryFactory;
+import com.lsp.types.enums.ResponseCode;
+import com.lsp.types.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Service;
 
 /**
@@ -33,11 +37,8 @@ public class RunnerNode extends AbstractArmorySupport {
         String agentName = agent.getAgentName();
         String agentDesc = agent.getAgentDesc();
 
-        // 从agentGroup得到最后一个节点的Agent，也就是整个工作流的主Agent
-        BaseAgent rootAgent = dynamicContext.getAgentGroup().get(dynamicContext.getRootAgentName());
-
-        // 创建 InMemoryRunner
-        InMemoryRunner runner = new InMemoryRunner(rootAgent, appName);
+        //改成从配置表里取runner的配置
+        InMemoryRunner runner = getRunner(dynamicContext, aiAgentConfigTableVO, appName);
 
         AiAgentRegisterVO aiAgentRegisterVO = AiAgentRegisterVO.builder()
                 .appName(appName)
@@ -56,6 +57,21 @@ public class RunnerNode extends AbstractArmorySupport {
     @Override
     public StrategyHandler<ArmoryCommandEntity, DefaultArmoryFactory.DynamicContext, AiAgentRegisterVO> get(ArmoryCommandEntity requestParameter, DefaultArmoryFactory.DynamicContext dynamicContext) throws Exception {
         return defaultStrategyHandler;
+    }
+
+    @NotNull
+    private static InMemoryRunner getRunner(DefaultArmoryFactory.DynamicContext dynamicContext, AiAgentConfigTableVO aiAgentConfigTableVO, String appName) {
+        AiAgentConfigTableVO.Module.Runner runnerConfig = aiAgentConfigTableVO.getModule().getRunner();
+
+        String agentName = runnerConfig.getAgentName();
+        if (StringUtils.isBlank(agentName)) {
+            log.error("runner.agentName is null");
+            throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
+        }
+
+        BaseAgent baseAgent = dynamicContext.getAgentGroup().get(agentName);
+
+        return new InMemoryRunner(baseAgent, appName);
     }
 
 }

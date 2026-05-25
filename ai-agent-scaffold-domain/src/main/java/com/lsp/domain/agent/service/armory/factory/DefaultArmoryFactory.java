@@ -55,10 +55,6 @@ public class DefaultArmoryFactory {
          */
         private ChatModel chatModel;
 
-        /**
-         * 最后一个智能体节点名字
-         */
-        private String rootAgentName;
 
         /**
          * 子智能体配置组(有哪几个智能体)
