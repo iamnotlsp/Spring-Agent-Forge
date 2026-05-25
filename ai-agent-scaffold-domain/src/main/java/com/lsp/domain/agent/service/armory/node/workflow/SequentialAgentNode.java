@@ -33,9 +33,8 @@ public class SequentialAgentNode extends AbstractArmorySupport {
     protected AiAgentRegisterVO doApply(ArmoryCommandEntity requestParameter, DefaultArmoryFactory.DynamicContext dynamicContext) throws Exception {
         log.info("Ai Agent 装配操作 - SequentialAgentNode - 串行工作流");
 
-        // 取出并移除第一个工作流
-        List<AiAgentConfigTableVO.Module.AgentWorkflow> agentWorkflows = dynamicContext.getAgentWorkflows();
-        AiAgentConfigTableVO.Module.AgentWorkflow agentWorkflow = agentWorkflows.remove(0);
+        // 取出当前工作流
+        AiAgentConfigTableVO.Module.AgentWorkflow agentWorkflow = dynamicContext.getCurrentAgentWorkflow();
 
         // 根据工作流的子智能体配置 从上下文agentGroup取得subAgents
         List<String> subAgentNames = agentWorkflow.getSubAgents();
@@ -53,17 +52,13 @@ public class SequentialAgentNode extends AbstractArmorySupport {
         dynamicContext.getAgentGroup().put(agentWorkflow.getName(), sequentialAgent);
 
 
-        // 注册到 Spring 容器
-        // 使最后兜底的sequentialAgent装配完成后作为主 Agent，能被其他模块通过名称获取
-        registerBean(agentWorkflow.getName(), SequentialAgent.class, sequentialAgent);
-
         return router(requestParameter, dynamicContext);
     }
 
     @Override
     public StrategyHandler<ArmoryCommandEntity, DefaultArmoryFactory.DynamicContext, AiAgentRegisterVO> get(ArmoryCommandEntity requestParameter, DefaultArmoryFactory.DynamicContext dynamicContext) throws Exception {
         // 目前串行工作流作为兜底，到最后执行节点
-        return runnerNode;
+        return getBean("agentWorkflowNode");
     }
 
 }

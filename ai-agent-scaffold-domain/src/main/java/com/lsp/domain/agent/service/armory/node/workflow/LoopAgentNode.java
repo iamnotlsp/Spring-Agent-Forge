@@ -9,9 +9,11 @@ import com.lsp.domain.agent.model.valobj.AiAgentRegisterVO;
 import com.lsp.domain.agent.model.valobj.enums.AgentTypeEnum;
 import com.lsp.domain.agent.service.armory.AbstractArmorySupport;
 import com.lsp.domain.agent.service.armory.factory.DefaultArmoryFactory;
+import com.lsp.domain.agent.service.armory.node.AgentWorkflowNode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.util.List;
 
 
@@ -29,9 +31,9 @@ public class LoopAgentNode extends AbstractArmorySupport {
     protected AiAgentRegisterVO doApply(ArmoryCommandEntity requestParameter, DefaultArmoryFactory.DynamicContext dynamicContext) throws Exception {
         log.info("Ai Agent 装配操作 - LoopAgentNode - 循环工作流");
 
-        List<AiAgentConfigTableVO.Module.AgentWorkflow> agentWorkflows = dynamicContext.getAgentWorkflows();
-        // 取出并移除第一个工作流
-        AiAgentConfigTableVO.Module.AgentWorkflow agentWorkflow = agentWorkflows.remove(0);
+        // 取出当前工作流
+        AiAgentConfigTableVO.Module.AgentWorkflow agentWorkflow = dynamicContext.getCurrentAgentWorkflow();
+
 
         // 取出这个 Loop 工作流需要包含哪些子 Agent
         // 子 Agent 通过 test-agent.yml配置文件间接配置
@@ -56,32 +58,7 @@ public class LoopAgentNode extends AbstractArmorySupport {
 
     @Override
     public StrategyHandler<ArmoryCommandEntity, DefaultArmoryFactory.DynamicContext, AiAgentRegisterVO> get(ArmoryCommandEntity requestParameter, DefaultArmoryFactory.DynamicContext dynamicContext) throws Exception {
-
-        // 从上下文中取得剩余工作流配置，如果没有配置，结束路由
-        List<AiAgentConfigTableVO.Module.AgentWorkflow> agentWorkflows = dynamicContext.getAgentWorkflows();
-
-        if (null == agentWorkflows || agentWorkflows.isEmpty()) {
-            return defaultStrategyHandler;
-        }
-
-        //如果有配置，取得第一个工作流配置，判断类型，路由到对应的节点
-        AiAgentConfigTableVO.Module.AgentWorkflow agentWorkflow = agentWorkflows.get(0);
-
-        String type = agentWorkflow.getType();
-        AgentTypeEnum agentTypeEnum = AgentTypeEnum.formType(type);
-
-        if (null == agentTypeEnum) {
-            throw new RuntimeException("agentWorkflow type is error!");
-        }
-
-        String node = agentTypeEnum.getNode();
-
-        // 注意如果下一个节点还是循环则结束路由
-        return switch (node) {
-            case "parallelAgentNode" -> getBean("parallelAgentNode");
-            case "sequentialAgentNode" -> getBean("sequentialAgentNode");
-            default -> defaultStrategyHandler;
-        };
+        return getBean("agentWorkflowNode");
 
     }
 }

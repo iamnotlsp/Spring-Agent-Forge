@@ -37,32 +37,33 @@ public class AgentWorkflowNode extends AbstractArmorySupport {
         List<AiAgentConfigTableVO.Module.AgentWorkflow> agentWorkflows = aiAgentConfigTableVO.getModule().getAgentWorkflows();
 
         //没有工作流直接路由到runnerNode节点继续执行
-        if (null == agentWorkflows || agentWorkflows.isEmpty()) {
+        if (null == agentWorkflows || agentWorkflows.isEmpty() || dynamicContext.getCurrentStepIndex() >= agentWorkflows.size()) {
+            // 设置结果值
+            dynamicContext.setCurrentAgentWorkflow(null);
+            // 路由下节点
             return router(requestParameter, dynamicContext);
         }
 
-        // 将多个子智能体工作流方式放入动态上下文中，供后续节点使用
-        dynamicContext.setAgentWorkflows(agentWorkflows);
+        //根据上下文当前步骤得到当前工作流配置，并设置到上下文里
+        dynamicContext.setCurrentAgentWorkflow(agentWorkflows.get(dynamicContext.getCurrentStepIndex()));
+
+        // 步骤值增加
+        dynamicContext.addCurrentStepIndex();
 
         return router(requestParameter, dynamicContext);
     }
 
     @Override
     public StrategyHandler<ArmoryCommandEntity, DefaultArmoryFactory.DynamicContext, AiAgentRegisterVO> get(ArmoryCommandEntity armoryCommandEntity, DefaultArmoryFactory.DynamicContext dynamicContext) throws Exception {
-        /* 从上下文里拿初始的工作流配置 */
-        List<AiAgentConfigTableVO.Module.AgentWorkflow> agentWorkflows = dynamicContext.getAgentWorkflows();
+        // 从上下文里拿当前的工作流配置
+        AiAgentConfigTableVO.Module.AgentWorkflow currentAgentWorkflow = dynamicContext.getCurrentAgentWorkflow();
 
-
-        // 如设置没有工作流则默认则直接跳过工作流节点，路由至runnerNode
-        if (null == agentWorkflows || agentWorkflows.isEmpty()){
+        if (null == currentAgentWorkflow){
             return runnerNode;
         }
 
-        /* 取第一个工作流 */
-        AiAgentConfigTableVO.Module.AgentWorkflow agentWorkflow = agentWorkflows.get(0);
+        String type = currentAgentWorkflow.getType();
 
-        // 根据type string转化成agent枚举后，
-        String type = agentWorkflow.getType();
         AgentTypeEnum agentTypeEnum = AgentTypeEnum.formType(type);
 
         if (null == agentTypeEnum) {
@@ -72,12 +73,12 @@ public class AgentWorkflowNode extends AbstractArmorySupport {
         // 通过枚举取得对应的node字符串，
         String node = agentTypeEnum.getNode();
 
-        // 最终路由到对应的node上
+        // 最终路由到对应的node上 默认路由到runnerNode上
         return switch (node) {
             case "loopAgentNode" -> loopAgentNode;
             case "parallelAgentNode" -> parallelAgentNode;
             case "sequentialAgentNode" -> sequentialAgentNode;
-            default -> defaultStrategyHandler;
+            default -> runnerNode;
         };
     }
 }
