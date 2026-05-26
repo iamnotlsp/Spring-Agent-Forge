@@ -45,3 +45,13 @@ logging:
   level:
     root: info
   config: classpath:logback-spring.xml
+
+# 普罗米修斯监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    prometheus:
+      enabled: true
