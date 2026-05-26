@@ -1,4 +1,4 @@
-package com.lsp.domain.agent.service.armory.mcp.server;
+package com.lsp.domain.agent.service.armory.tool.mcp.server;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;

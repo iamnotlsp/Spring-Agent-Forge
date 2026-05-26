@@ -1,8 +1,8 @@
-package com.lsp.domain.agent.service.armory.mcp.client.impl;
+package com.lsp.domain.agent.service.armory.tool.mcp.client.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lsp.domain.agent.model.valobj.AiAgentConfigTableVO;
-import com.lsp.domain.agent.service.armory.mcp.client.TooMcpCreateService;
+import com.lsp.domain.agent.service.armory.tool.mcp.client.TooMcpCreateService;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.ServerParameters;

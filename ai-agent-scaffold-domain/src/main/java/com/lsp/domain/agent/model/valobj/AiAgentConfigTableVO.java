@@ -165,10 +165,12 @@ public class AiAgentConfigTableVO {
 
         /**
          * Runner 配置，定义最后执行节点的 Runner 是什么
+         * 添加插件名单，Runner 可以根据插件名调用对应的插件来执行任务
          */
         @Data
         public static class Runner {
             private String agentName;
+            private List<String> pluginNameList;
         }
     }
 }

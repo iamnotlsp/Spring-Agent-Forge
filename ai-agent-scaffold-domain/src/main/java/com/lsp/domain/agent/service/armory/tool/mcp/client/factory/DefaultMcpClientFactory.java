@@ -1,10 +1,10 @@
-package com.lsp.domain.agent.service.armory.mcp.client.factory;
+package com.lsp.domain.agent.service.armory.tool.mcp.client.factory;
 
 import com.lsp.domain.agent.model.valobj.AiAgentConfigTableVO;
-import com.lsp.domain.agent.service.armory.mcp.client.TooMcpCreateService;
-import com.lsp.domain.agent.service.armory.mcp.client.impl.LocalToolMcpCreateService;
-import com.lsp.domain.agent.service.armory.mcp.client.impl.SSEToolMcpCreateService;
-import com.lsp.domain.agent.service.armory.mcp.client.impl.StdioToolMcpCreateService;
+import com.lsp.domain.agent.service.armory.tool.mcp.client.TooMcpCreateService;
+import com.lsp.domain.agent.service.armory.tool.mcp.client.impl.LocalToolMcpCreateService;
+import com.lsp.domain.agent.service.armory.tool.mcp.client.impl.SSEToolMcpCreateService;
+import com.lsp.domain.agent.service.armory.tool.mcp.client.impl.StdioToolMcpCreateService;
 import com.lsp.types.enums.ResponseCode;
 import com.lsp.types.exception.AppException;
 import lombok.extern.slf4j.Slf4j;

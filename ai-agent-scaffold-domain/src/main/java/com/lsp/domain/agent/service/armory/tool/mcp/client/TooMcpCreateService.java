@@ -1,4 +1,4 @@
-package com.lsp.domain.agent.service.armory.mcp.client;
+package com.lsp.domain.agent.service.armory.tool.mcp.client;
 
 import com.lsp.domain.agent.model.valobj.AiAgentConfigTableVO;
 import org.springframework.ai.tool.ToolCallback;

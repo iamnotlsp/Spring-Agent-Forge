@@ -1,6 +1,6 @@
 package com.lsp;
 
-import com.lsp.domain.agent.service.armory.mcp.server.MyTestMcpService;
+import com.lsp.domain.agent.service.armory.tool.mcp.server.MyTestMcpService;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.beans.factory.annotation.Configurable;
