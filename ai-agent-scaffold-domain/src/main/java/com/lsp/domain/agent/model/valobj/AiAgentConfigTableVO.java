@@ -87,9 +87,10 @@ public class AiAgentConfigTableVO {
             private List<ToolMcp> toolMcpList;
 
             /**
-             * 工具配置，支持两种 MCP 接入方式
+             * 工具配置，支持三种 MCP 接入方式
              * SSE   远程 MCP 服务，比如百度搜索 MCP
              * Stdio 本地 MCP 服务，比如自己写的本地工具服务
+             * Local 是把当前 Java 项目里的方法直接变成工具
              */
             @Data
             public static class ToolMcp {
@@ -97,6 +98,8 @@ public class AiAgentConfigTableVO {
                 private SSEServerParameters sse;
 
                 private StdioServerParameters stdio;
+
+                private LocalParameters local;
 
                 @Data
                 public static class SSEServerParameters {
@@ -120,6 +123,11 @@ public class AiAgentConfigTableVO {
                         private Map<String, String> env;
 
                     }
+                }
+
+                @Data
+                public static class LocalParameters {
+                    private String name;
                 }
 
             }
