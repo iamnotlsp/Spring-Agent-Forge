@@ -19,6 +19,7 @@ spring:
       #      - classpath:agent/test-agent-02.yml
       - classpath:agent/test-agent.yml
       - classpath:agent/test-agent2.yml
+      - classpath:agent/qwen-agent.yml
   datasource:
     username: root
     password: 123456

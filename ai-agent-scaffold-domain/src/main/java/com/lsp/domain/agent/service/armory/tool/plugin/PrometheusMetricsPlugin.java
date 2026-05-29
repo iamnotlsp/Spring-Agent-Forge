@@ -70,22 +70,7 @@ public class PrometheusMetricsPlugin extends BasePlugin {
         return super.beforeAgentCallback(agent, callbackContext);
     }
 
-    @Override
-    public Maybe<LlmResponse> beforeModelCallback(CallbackContext callbackContext, LlmRequest llmRequest) {
-        String key = callbackContext.invocationId();
-        String model = llmRequest.model().orElse("unknown");
-        modelSamples.put(key, Timer.start(meterRegistry));
-        modelNames.put(key, model);
 
-        Counter.builder("ai_agent_model_calls_total")
-                .description("AI model call count")
-                .tag("agent", callbackContext.agentName())
-                .tag("model", model)
-                .register(meterRegistry)
-                .increment();
-
-        return super.beforeModelCallback(callbackContext, llmRequest);
-    }
 
     @Override
     public Maybe<LlmResponse> afterModelCallback(CallbackContext callbackContext, LlmResponse llmResponse) {
@@ -105,20 +90,7 @@ public class PrometheusMetricsPlugin extends BasePlugin {
         return super.afterModelCallback(callbackContext, llmResponse);
     }
 
-    @Override
-    public Maybe<LlmResponse> onModelErrorCallback(CallbackContext callbackContext, LlmRequest llmRequest, Throwable throwable) {
-        String model = llmRequest.model().orElse("unknown");
 
-        Counter.builder("ai_agent_model_errors_total")
-                .description("AI model error count")
-                .tag("agent", callbackContext.agentName())
-                .tag("model", model)
-                .tag("error", throwable.getClass().getSimpleName())
-                .register(meterRegistry)
-                .increment();
-
-        return super.onModelErrorCallback(callbackContext, llmRequest, throwable);
-    }
 
     @Override
     public Maybe<Map<String, Object>> beforeToolCallback(BaseTool tool, Map<String, Object> input, ToolContext toolContext) {
