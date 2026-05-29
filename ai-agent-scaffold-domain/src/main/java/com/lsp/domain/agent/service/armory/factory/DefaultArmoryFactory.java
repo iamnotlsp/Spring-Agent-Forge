@@ -13,6 +13,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -29,10 +30,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class DefaultArmoryFactory {
 
     @Resource
+    private ApplicationContext applicationContext;
+
+    @Resource
     private RootNode rootNode;
 
     public StrategyHandler<ArmoryCommandEntity, DynamicContext, AiAgentRegisterVO> armoryStrategyHandler() {
         return rootNode;
+    }
+
+    //从 Spring 容器拿到对应智能体
+    public AiAgentRegisterVO getAiAgentRegisterVO(String agentId) {
+        return applicationContext.getBean(agentId, AiAgentRegisterVO.class);
     }
 
     /**

@@ -1,0 +1,39 @@
+ai:
+  agent:
+    config:
+      tables:
+        image-recognition-agent:
+          app-name: image-recognition-agent
+          agent:
+            agent-id: 100005
+            agent-name: 图像识别智能体
+            agent-desc: 用于实验图像识别
+          module:
+            ai-api:
+              base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+              api-key: ${DASHSCOPE_API_KEY}
+              completions-path: /chat/completions
+              embeddings-path: /embeddings
+            chat-model:
+              model: qwen3.6-plus
+              tool-mcp-list:
+                - sse:
+                    name: baidu-search
+                    base-uri: http://appbuilder.baidu.com/v2/ai_search/mcp/
+                    sse-endpoint: sse?api_key=bce-v3/ALTAK-GRdkGWiRm3mEZlpxhzWF3/0aee9ff74f8f7f3cb1eb8df06d2bc1bd133b9912
+                    request-timeout: 5000
+                - local:
+                    name: myToolCallbackProvider
+            agents:
+              - name: onlyAgent
+                description: 图像识别
+                instruction: |
+                    你是一个图像识别智能体，你的任务是根据用户的输入，识别图片中的内容，并提供相关的信息和建议。你可以使用以下工具来完成你的任务：
+                    1. 百度搜索工具：当你需要获取更多信息时，可以使用这个工具来搜索相关内容。
+                    2. 本地工具：当你需要调用本地功能时，可以使用这个工具来执行相关操作。
+            runner:
+              agent-name: onlyAgent
+              plugin-name-list:
+                - myTestPlugin
+                - myLogPlugin
+                - prometheusMetricsPlugin
