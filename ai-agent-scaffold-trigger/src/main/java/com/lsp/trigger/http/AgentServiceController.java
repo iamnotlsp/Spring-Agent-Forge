@@ -1,5 +1,6 @@
 package com.lsp.trigger.http;
 
+import com.alibaba.fastjson.JSON;
 import com.lsp.api.IAgentService;
 import com.lsp.api.dto.*;
 import com.lsp.api.response.Response;
@@ -106,7 +107,24 @@ public class AgentServiceController implements IAgentService {
             List<String> messages = chatService.handleMessage(requestDTO.getAgentId(), requestDTO.getUserId(), sessionId, requestDTO.getMessage());
 
             ChatResponseDTO responseDTO = new ChatResponseDTO();
-            responseDTO.setContent(String.join("\n", messages));
+            try {
+                // 把智能体返回的最后一条消息，尽量解析成 ChatResponseDTO，方便前端判断是普通文本回复，还是 draw.io 图表数据
+                String result = messages.stream().reduce((first, second) -> second).orElse("");
+                ChatResponseDTO parsed = JSON.parseObject(result, ChatResponseDTO.class);
+                if (null != parsed) {
+                    responseDTO = parsed;
+                    // 如果解析后的对象 type 为空，则默认为 user
+                    if (null == responseDTO.getType()) {
+                        responseDTO.setType("user");
+                    }
+                } else {
+                    responseDTO.setType("user");
+                    responseDTO.setContent(String.join("\n", messages));
+                }
+            } catch (Exception e) {
+                responseDTO.setType("user");
+                responseDTO.setContent(String.join("\n", messages));
+            }
 
             return Response.<ChatResponseDTO>builder()
                     .code(ResponseCode.SUCCESS.getCode())

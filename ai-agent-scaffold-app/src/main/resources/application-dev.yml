@@ -16,10 +16,11 @@ thread:
 spring:
   config:
     import:
-      #      - classpath:agent/test-agent-02.yml
-#      - classpath:agent/test-agent.yml
-#      - classpath:agent/test-agent2.yml
-      - classpath:agent/qwen-agent.yml
+      - classpath:agent/agent-draw-io.yml
+  #      - classpath:agent/test-agent.yml
+  #      - classpath:agent/test-agent2.yml
+  #      - classpath:agent/qwen-agent.yml
+
   datasource:
     username: root
     password: 123456
