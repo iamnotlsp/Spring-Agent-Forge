@@ -8,6 +8,7 @@ import com.lsp.domain.agent.service.armory.AbstractArmorySupport;
 import com.lsp.domain.agent.service.armory.factory.DefaultArmoryFactory;
 import com.lsp.domain.agent.service.armory.tool.mcp.client.TooMcpCreateService;
 import com.lsp.domain.agent.service.armory.tool.mcp.client.factory.DefaultMcpClientFactory;
+import com.lsp.domain.agent.service.armory.tool.skills.ToolSkillsCreateService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.openai.OpenAiChatModel;
@@ -30,6 +31,9 @@ public class ChatModelNode extends AbstractArmorySupport {
     @Resource
     private DefaultMcpClientFactory defaultMcpClientFactory;
 
+    @Resource
+    private ToolSkillsCreateService toolSkillsCreateService;
+
     @Override
     protected AiAgentRegisterVO doApply(ArmoryCommandEntity requestParameter, DefaultArmoryFactory.DynamicContext dynamicContext) throws Exception {
         log.info("Ai Agent 装配操作 - ChatModelNode - 构建对话模型配置及加入MCP工具至模型配置");
@@ -41,14 +45,29 @@ public class ChatModelNode extends AbstractArmorySupport {
         AiAgentConfigTableVO.Module.ChatModel chatModelConfig = aiAgentConfigTableVO.getModule().getChatModel();
         // 得到MCP配置列表
         List<AiAgentConfigTableVO.Module.ChatModel.ToolMcp> toolMcpList = chatModelConfig.getToolMcpList();
+        // 得到skill列表
+        List<AiAgentConfigTableVO.Module.ChatModel.ToolSkills> toolSkillsList = chatModelConfig.getToolSkillsList();
+
         // 构建mcp服务（工厂）
         // ToolCallback 就是 Spring AI 里“模型可以调用的工具”
         List<ToolCallback> toolCallbackList = new ArrayList<>();
-        for (AiAgentConfigTableVO.Module.ChatModel.ToolMcp toolMcp : toolMcpList) {
-            // 使用工厂将一项配置真正转换成 Spring AI 可识别的工具回调
-            TooMcpCreateService tooMcpCreateService = defaultMcpClientFactory.getTooMcpCreateService(toolMcp);
-            ToolCallback[] toolCallbacks = tooMcpCreateService.buildToolCallback(toolMcp);
-            toolCallbackList.addAll(List.of(toolCallbacks));
+
+
+        if (null != toolMcpList && !toolMcpList.isEmpty()) {
+            for (AiAgentConfigTableVO.Module.ChatModel.ToolMcp toolMcp : toolMcpList) {
+                // 使用工厂将一项配置真正转换成 Spring AI 可识别的工具回调
+                TooMcpCreateService tooMcpCreateService = defaultMcpClientFactory.getTooMcpCreateService(toolMcp);
+                ToolCallback[] toolCallbacks = tooMcpCreateService.buildToolCallback(toolMcp);
+                toolCallbackList.addAll(List.of(toolCallbacks));
+            }
+        }
+
+        // 构建skills服务
+        if (null != toolSkillsList && !toolSkillsList.isEmpty()) {
+            for (AiAgentConfigTableVO.Module.ChatModel.ToolSkills toolSkills : toolSkillsList) {
+                ToolCallback[] toolCallbacks = toolSkillsCreateService.buildToolCallback(toolSkills);
+                toolCallbackList.addAll(List.of(toolCallbacks));
+            }
         }
 
         // 构建一个ChatModel（OpenAI 兼容模型）并把LLM api连接 和 MCP工具能力一起挂载进去（使其既能对话又能调用外部工具）

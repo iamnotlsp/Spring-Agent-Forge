@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @description Ai Agent 智能体配置表值对象
  * @author 林善鹏
+ * @description Ai Agent 智能体配置表值对象
  * @date 2026-05-21 14:19
  */
 
@@ -85,6 +85,7 @@ public class AiAgentConfigTableVO {
 
             private String model;
             private List<ToolMcp> toolMcpList;
+            private List<ToolSkills> toolSkillsList;
 
             /**
              * 工具配置，支持三种 MCP 接入方式
@@ -131,7 +132,28 @@ public class AiAgentConfigTableVO {
                 }
 
             }
+
+            /**
+             * @author 林善鹏
+             * @description 告诉系统：去哪里加载智能体可用的技能说明/工具能力/提示词资源
+             * @date 2026-06-04 14:40
+             */
+            @Data
+            public static class ToolSkills {
+
+                /**
+                 * 类型；directory（用户配置的，映射进来的）、resource（放到工程下的）
+                 */
+                private String type = "directory";
+
+                /**
+                 * 路径；
+                 */
+                private String path;
+
+            }
         }
+
 
         /**
          * 实际参与编排的子智能体

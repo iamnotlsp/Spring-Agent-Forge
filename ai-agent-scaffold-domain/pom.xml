@@ -38,6 +38,10 @@
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.springaicommunity</groupId>
+            <artifactId>spring-ai-agent-utils</artifactId>
+        </dependency>
         <!-- 系统模块 -->
         <dependency>
             <groupId>com.lsp</groupId>

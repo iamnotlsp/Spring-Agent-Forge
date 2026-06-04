@@ -24,16 +24,21 @@ ai:
                     request-timeout: 5000
                 - local:
                     name: myToolCallbackProvider
+              tool-skills-list:
+                - type: directory
+                  path: E:/javaProject/ai-agent-scaffold/skills
+                - type: resource
+                  path: agent/skills
             agents:
               - name: onlyAgent
                 description: 图像识别
                 instruction: |
-                    你是一个图像识别智能体，你的任务是根据用户的输入，识别图片中的内容，并提供相关的信息和建议。你可以使用以下工具来完成你的任务：
-                    1. 百度搜索工具：当你需要获取更多信息时，可以使用这个工具来搜索相关内容。
-                    2. 本地工具：当你需要调用本地功能时，可以使用这个工具来执行相关操作。
+                  你是一个图像识别智能体，你的任务是根据用户的输入，识别图片中的内容，并提供相关的信息和建议。你可以使用以下工具来完成你的任务：
+                  1. 百度搜索工具：当你需要获取更多信息时，可以使用这个工具来搜索相关内容。
+                  2. 本地工具：当你需要调用本地功能时，可以使用这个工具来执行相关操作。
             runner:
               agent-name: onlyAgent
               plugin-name-list:
                 - myTestPlugin
-#                - myLogPlugin
+                #                - myLogPlugin
                 - prometheusMetricsPlugin

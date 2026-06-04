@@ -40,3 +40,12 @@ build/
 /.mvn/
 /ai-agent-scaffold-app/src/test/
 /docs/dev-ops/api/curl.sh
+
+# runtime logs
+*.log
+data/
+**/data/
+
+# local secret configs
+ai-agent-scaffold-app/src/main/resources/agent/test-agent.yml
+ai-agent-scaffold-app/src/main/resources/agent/test-agent2.yml
