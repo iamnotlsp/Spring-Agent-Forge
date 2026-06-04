@@ -1,5 +1,6 @@
 package com.lsp.domain.agent.service.chat;
 
+import com.google.adk.agents.RunConfig;
 import com.google.adk.events.Event;
 import com.google.adk.runner.InMemoryRunner;
 import com.google.adk.sessions.Session;
@@ -114,7 +115,11 @@ public class ChatService implements IChatService {
         InMemoryRunner runner = aiAgentRegisterVO.getRunner();
 
         Content userMsg = Content.fromParts(Part.fromText(message));
-        return runner.runAsync(userId, sessionId, userMsg);
+
+        RunConfig runConfig = RunConfig.builder()
+                .streamingMode(RunConfig.StreamingMode.SSE)
+                .build();
+        return runner.runAsync(userId, sessionId, userMsg, runConfig);
     }
 
     @Override

@@ -35,5 +35,5 @@ ai:
               agent-name: onlyAgent
               plugin-name-list:
                 - myTestPlugin
-                - myLogPlugin
+#                - myLogPlugin
                 - prometheusMetricsPlugin
