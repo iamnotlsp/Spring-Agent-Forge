@@ -63,7 +63,7 @@ public class AgentServiceController implements IAgentService {
         }
     }
 
-    @RequestMapping(value = "create_session", method = RequestMethod.GET)
+    @RequestMapping(value = "create_session", method = {RequestMethod.POST})
     @Override
     public Response<CreateSessionResponseDTO> createSession(@RequestBody CreateSessionRequestDTO requestDTO) {
         try {
@@ -138,7 +138,10 @@ public class AgentServiceController implements IAgentService {
                     .subscribe(
                             event -> {
                                 try {
-                                    emitter.send(event.stringifyContent());
+                                    String content = event.stringifyContent();
+                                    if (content != null && !content.isBlank()) {
+                                        emitter.send(SseEmitter.event().data(content));
+                                    }
                                 } catch (Exception e) {
                                     log.error("流式对话发送失败", e);
                                     emitter.completeWithError(e);
