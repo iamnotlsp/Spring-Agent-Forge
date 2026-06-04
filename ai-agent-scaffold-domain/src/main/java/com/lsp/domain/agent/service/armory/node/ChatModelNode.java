@@ -101,7 +101,7 @@ public class ChatModelNode extends AbstractArmorySupport {
 //        AiAgentConfigTableVO.Module.ChatModel.ToolMcp.StdioServerParameters stdioConfig = toolMcp.getStdio();
 //
 //        if (null != sseConfig) {
-//            // http://appbuilder.baidu.com/v2/ai_search/mcp/sse?api_key=bce-v3/ALTAK-JFZXXLpfxhAutDQvJ32Ei/4492c1879b8c2f0df4612ef5b4a52df1c1fba9f7
+//            // http://appbuilder.baidu.com/v2/ai_search/mcp/sse?api_key=${BAIDU_MCP_KEY}
 //
 //            String originalBaseUri = sseConfig.getBaseUri();
 //            String baseUri = originalBaseUri;

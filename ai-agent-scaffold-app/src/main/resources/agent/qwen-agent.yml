@@ -20,7 +20,7 @@ ai:
                 - sse:
                     name: baidu-search
                     base-uri: http://appbuilder.baidu.com/v2/ai_search/mcp/
-                    sse-endpoint: sse?api_key=bce-v3/ALTAK-GRdkGWiRm3mEZlpxhzWF3/0aee9ff74f8f7f3cb1eb8df06d2bc1bd133b9912
+                    sse-endpoint: sse?api_key=${BAIDU_MCP_KEY}
                     request-timeout: 5000
                 - local:
                     name: myToolCallbackProvider
