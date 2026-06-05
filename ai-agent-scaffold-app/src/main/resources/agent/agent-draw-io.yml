@@ -22,11 +22,11 @@ ai:
                     base-uri: http://appbuilder.baidu.com/v2/ai_search/mcp/
                     sse-endpoint: sse?api_key=${BAIDU_MCP_KEY}
                     request-timeout: 5000
-                - local:
-                    name: myToolCallbackProvider
-              tool-skills-list:
-                - type: resource
-                  path: agent/skills
+            #                - local:
+            #                    name: myToolCallbackProvider
+            #              tool-skills-list:
+            #                - type: resource
+            #                  path: agent/skills
             agents:
               # 1. 需求分析与检索智能体
               - name: agent_analyst
@@ -43,16 +43,87 @@ ai:
 
               # 2. 绘图执行智能体
               - name: agent_drawer
-                description: 根据分析结果生成 Draw.io 的 XML 数据。
+                description: 根据分析结果生成 Draw.io 的 DiagramSpec JSON 数据。
                 instruction: |
-                  你是一个 Draw.io 绘图专家。请根据输入 {analysis_result} 进行操作：
-                  1. 如果输入是 {"type": "user", ...}，请直接原样输出该 JSON。
-                  2. 如果输入是详细的绘图需求：
-                     - 设计图表的结构（UML、流程图、时序图等）。
-                     - 生成符合 Draw.io 规范的 XML 代码。
-                     - 确保节点布局合理，逻辑清晰。
-                     - 输出生成的 XML 内容。
-                output-key: draft_diagram
+                  你是一个图表结构设计师，不要生成 Draw.io XML。
+                    请根据输入 {analysis_result} 输出 DiagramSpec JSON。
+
+                    如果输入是 {"type":"user",...}，请直接原样输出该 JSON。
+
+                    DiagramSpec 格式如下：
+                    {
+                      "type": "drawio_spec",
+                      "title": "图表标题",
+                      "layout": "left-to-right",
+                      "groups": [
+                        {"id": "group_id", "label": "分组名称"}
+                      ],
+                      "nodes": [
+                        {"id": "node_id", "label": "节点名称", "group": "group_id"}
+                      ],
+                      "edges": [
+                        {"source": "node_id", "target": "node_id", "label": "关系说明"}
+                      ]
+                    }
+
+                    要求：
+                    1. 只输出 JSON，不要 Markdown。
+                    2. 不要输出 Draw.io XML。
+                    3. layout 只能是 left-to-right 或 top-to-bottom。
+                    4. 节点数量建议 8 到 20 个，最多 24 个。
+                    5. 连线数量建议 8 到 28 条，最多 32 条。
+                    6. id 使用英文小写、数字、下划线。
+                    7. label 可以使用中文。
+                    8. 如果用户要求复杂图，请保留核心结构，不要展开所有细节。
+                    9. 最终必须严格输出如下 JSON 结构：
+                      {
+                        "type": "drawio_spec",
+                        "content": {
+                          "title": "图表标题",
+                          "layout": "left-to-right",
+                          "groups": [
+                            {"id": "group_id", "label": "分组名称"}
+                          ],
+                          "nodes": [
+                            {"id": "node_id", "label": "节点名称", "group": "group_id"}
+                          ],
+                          "edges": [
+                            {"source": "node_id", "target": "node_id", "label": "关系说明"}
+                          ]
+                        }
+                      }
+                #                  你是一个 Draw.io 绘图专家。请根据输入 {analysis_result} 进行操作：
+                #                    规则：
+                #                      1. 如果输入是 {"type":"user",...}，请直接原样输出该 JSON。
+                #                      2. 如果输入是绘图需求，请生成符合 Draw.io 规范的 XML。
+                #
+                #                    绘图要求：
+                #                      - 默认生成中等复杂度图表，不要过度简化。
+                #                      - 节点数量建议 8 到 18 个，最多不超过 22 个。
+                #                      - 连线数量建议 8 到 24 条，最多不超过 30 条。
+                #                      - 每个节点文字尽量简洁，但可以表达清楚含义。
+                #                      - 使用基础形状、分组区域、颜色区分模块。
+                #                      - 允许使用圆角矩形、泳道/容器、箭头、虚线、文本标签。
+                #                      - 避免复杂图标、图片、渐变、阴影和大量自定义样式。
+                #                      - 布局优先从左到右或从上到下，避免连线大面积交叉。
+                #                      - 如果用户要求“完整细节”，也要控制在最多 22 个节点内。
+                #                      - XML 尽量控制在 15000 字符以内。
+                #
+                #                    输出要求：
+                #                    - 最终必须严格输出 JSON：
+                #                      {"type":"drawio","content":"这里放完整的 Draw.io XML 字符串"}
+                #                    - content 中必须是完整 XML，必须以 <mxfile 开始。
+                #                    - 不要使用 Markdown 代码块。
+                #                    - 不要输出 JSON 之外的任何解释文字。
+                #                  1. 如果输入是 {"type": "user", ...}，请直接原样输出该 JSON。
+                #                  2. 如果输入是详细的绘图需求：
+                #                     - 设计图表的结构（UML、流程图、时序图等）。
+                #                     - 生成符合 Draw.io 规范的 XML 代码。
+                #                     - 确保节点布局合理，逻辑清晰，连线不重复。
+                #                     - 输出生成的 XML 内容。
+                #                     - 最终输出必须严格符合 JSON 格式：
+                #                       {"type": "drawio", "content": "这里放最终的XML字符串"}
+                output-key: final_result
 
               # 3. 检查与优化智能体
               - name: agent_reviewer
@@ -84,7 +155,7 @@ ai:
                 description: 并行生成多个绘图方案
                 sub-agents:
                   - agent_drawer
-                  - agent_drawer
+              #                  - agent_drawer
 
               # 定义一个串行工作流，按顺序执行分析、绘图、检查
               - type: sequential
@@ -93,8 +164,10 @@ ai:
                 sub-agents:
                   - agent_analyst
                   - agent_drawer
-                  - agent_reviewer
+            #                  - agent_reviewer
 
             runner:
               # 指定入口为串行工作流，这是最稳健的配置
               agent-name: sequential_draw_process
+              plugin-name-list:
+                - myTestPlugin
