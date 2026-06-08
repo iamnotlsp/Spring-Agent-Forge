@@ -149,10 +149,15 @@ public class AgentServiceController implements IAgentService {
     @RequestMapping(value = "chat_stream", method = RequestMethod.POST, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @Override
     public SseEmitter chatStream(@RequestBody ChatRequestDTO requestDTO) {
-        SseEmitter emitter = new SseEmitter(3 * 60 * 1000L);
+        SseEmitter emitter = new SseEmitter(10 * 60 * 1000L);
         try {
-            log.info("流式对话 agentId:{} userId:{} sessionId:{} message:{}", requestDTO.getAgentId(), requestDTO.getUserId(), requestDTO.getSessionId(), requestDTO.getMessage());
-            chatService.handleMessageStream(requestDTO.getAgentId(), requestDTO.getUserId(), requestDTO.getSessionId(), requestDTO.getMessage())
+            String sessionId = requestDTO.getSessionId();
+            if (sessionId == null || sessionId.isEmpty()) {
+                sessionId = chatService.createSession(requestDTO.getAgentId(), requestDTO.getUserId());
+            }
+
+            log.info("流式对话 agentId:{} userId:{} sessionId:{} message:{}", requestDTO.getAgentId(), requestDTO.getUserId(), sessionId, requestDTO.getMessage());
+            chatService.handleMessageStream(requestDTO.getAgentId(), requestDTO.getUserId(), sessionId, requestDTO.getMessage())
                     .subscribe(
                             event -> {
                                 try {

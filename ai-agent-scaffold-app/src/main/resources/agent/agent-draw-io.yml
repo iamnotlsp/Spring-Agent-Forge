@@ -7,7 +7,7 @@ ai:
           agent:
             agent-id: 300000
             agent-name: drawIoAgent
-            agent-desc: 智能绘图助手，支持Draw.io图表生成
+            agent-desc: Draw.io diagram assistant
           module:
             ai-api:
               base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
@@ -22,152 +22,62 @@ ai:
                     base-uri: http://appbuilder.baidu.com/v2/ai_search/mcp/
                     sse-endpoint: sse?api_key=${BAIDU_MCP_KEY}
                     request-timeout: 5000
-            #                - local:
-            #                    name: myToolCallbackProvider
-            #              tool-skills-list:
-            #                - type: resource
-            #                  path: agent/skills
+
             agents:
-              # 1. 需求分析与检索智能体
-              - name: agent_analyst
-                description: 负责理解用户意图，调用工具检索信息，并决定是请求补充信息还是继续绘图。
+              - name: agent_drawio_direct
+                description: Generate a complete high-quality Draw.io XML diagram directly.
                 instruction: |
-                  你是一个专业的需求分析师。你的任务是分析用户的绘图请求。
-                  1. 如果用户提供了具体的上下文或需要引用外部知识（如Git仓库、本地文件），请使用可用的工具（MCP）进行检索和分析。
-                  2. 分析用户的意图：
-                     - 如果用户的描述模糊、不完整，无法直接生成图表，你需要返回 JSON 格式要求用户补充信息。
-                       格式：{"type": "user", "content": "请补充关于...的具体信息"}
-                     - 如果用户意图清晰，请整理出详细的绘图需求（图表类型、节点、关系、布局要求等）。
-                  3. 输出你的分析结果。
-                output-key: analysis_result
+                  You are a senior Draw.io diagram designer.
 
-              # 2. 绘图执行智能体
-              - name: agent_drawer
-                description: 根据分析结果生成 Draw.io 的 DiagramSpec JSON 数据。
-                instruction: |
-                  你是一个图表结构设计师，不要生成 Draw.io XML。
-                    请根据输入 {analysis_result} 输出 DiagramSpec JSON。
+                  Convert the user's request into a polished Draw.io diagram.
+                  Return JSON only. Do not return markdown, comments, or explanations.
 
-                    如果输入是 {"type":"user",...}，请直接原样输出该 JSON。
+                  If the request is too vague to draw, return exactly:
+                  {"type":"user","content":"Please provide the diagram topic, key nodes, and relationships."}
 
-                    DiagramSpec 格式如下：
-                    {
-                      "type": "drawio_spec",
-                      "title": "图表标题",
-                      "layout": "left-to-right",
-                      "groups": [
-                        {"id": "group_id", "label": "分组名称"}
-                      ],
-                      "nodes": [
-                        {"id": "node_id", "label": "节点名称", "group": "group_id"}
-                      ],
-                      "edges": [
-                        {"source": "node_id", "target": "node_id", "label": "关系说明"}
-                      ]
-                    }
+                  Otherwise return exactly:
+                  {"type":"drawio","content":"FULL_DRAWIO_XML_HERE"}
 
-                    要求：
-                    1. 只输出 JSON，不要 Markdown。
-                    2. 不要输出 Draw.io XML。
-                    3. layout 只能是 left-to-right 或 top-to-bottom。
-                    4. 节点数量建议 8 到 20 个，最多 24 个。
-                    5. 连线数量建议 8 到 28 条，最多 32 条。
-                    6. id 使用英文小写、数字、下划线。
-                    7. label 可以使用中文。
-                    8. 如果用户要求复杂图，请保留核心结构，不要展开所有细节。
-                    9. 最终必须严格输出如下 JSON 结构：
-                      {
-                        "type": "drawio_spec",
-                        "content": {
-                          "title": "图表标题",
-                          "layout": "left-to-right",
-                          "groups": [
-                            {"id": "group_id", "label": "分组名称"}
-                          ],
-                          "nodes": [
-                            {"id": "node_id", "label": "节点名称", "group": "group_id"}
-                          ],
-                          "edges": [
-                            {"source": "node_id", "target": "node_id", "label": "关系说明"}
-                          ]
-                        }
-                      }
-                #                  你是一个 Draw.io 绘图专家。请根据输入 {analysis_result} 进行操作：
-                #                    规则：
-                #                      1. 如果输入是 {"type":"user",...}，请直接原样输出该 JSON。
-                #                      2. 如果输入是绘图需求，请生成符合 Draw.io 规范的 XML。
-                #
-                #                    绘图要求：
-                #                      - 默认生成中等复杂度图表，不要过度简化。
-                #                      - 节点数量建议 8 到 18 个，最多不超过 22 个。
-                #                      - 连线数量建议 8 到 24 条，最多不超过 30 条。
-                #                      - 每个节点文字尽量简洁，但可以表达清楚含义。
-                #                      - 使用基础形状、分组区域、颜色区分模块。
-                #                      - 允许使用圆角矩形、泳道/容器、箭头、虚线、文本标签。
-                #                      - 避免复杂图标、图片、渐变、阴影和大量自定义样式。
-                #                      - 布局优先从左到右或从上到下，避免连线大面积交叉。
-                #                      - 如果用户要求“完整细节”，也要控制在最多 22 个节点内。
-                #                      - XML 尽量控制在 15000 字符以内。
-                #
-                #                    输出要求：
-                #                    - 最终必须严格输出 JSON：
-                #                      {"type":"drawio","content":"这里放完整的 Draw.io XML 字符串"}
-                #                    - content 中必须是完整 XML，必须以 <mxfile 开始。
-                #                    - 不要使用 Markdown 代码块。
-                #                    - 不要输出 JSON 之外的任何解释文字。
-                #                  1. 如果输入是 {"type": "user", ...}，请直接原样输出该 JSON。
-                #                  2. 如果输入是详细的绘图需求：
-                #                     - 设计图表的结构（UML、流程图、时序图等）。
-                #                     - 生成符合 Draw.io 规范的 XML 代码。
-                #                     - 确保节点布局合理，逻辑清晰，连线不重复。
-                #                     - 输出生成的 XML 内容。
-                #                     - 最终输出必须严格符合 JSON 格式：
-                #                       {"type": "drawio", "content": "这里放最终的XML字符串"}
-                output-key: final_result
+                  XML requirements:
+                  - content must be a complete <mxfile> document.
+                  - include <diagram>, <mxGraphModel>, <root>, mxCell id="0", and mxCell id="1".
+                  - use valid XML escaping: &amp;, &lt;, &gt;, &quot; where needed.
+                  - every visible node must have mxGeometry.
+                  - every edge must have source, target, and mxGeometry relative="1".
+                  - use orthogonal edges with endArrow=block.
+                  - do not wrap XML in markdown fences.
 
-              # 3. 检查与优化智能体
-              - name: agent_reviewer
-                description: 检查绘图结果，确保无连线交叉等问题，并格式化最终输出。
-                instruction: |
-                  你是一个图表质量检查员。请审查输入 {draft_diagram}：
-                  1. 如果输入是 {"type": "user", ...}，请直接原样输出。
-                  2. 如果输入是 XML 代码：
-                     - 检查连线是否混乱或有严重的交叉（在文本层面尽力优化布局逻辑）。
-                     - 检查 XML 语法是否正确。
-                     - 如果有问题，请尝试修正 XML。
-                     - 最终输出必须严格符合 JSON 格式：
-                       {"type": "drawio", "content": "这里放最终的XML字符串"}
-                output-key: final_result
+                  Quality requirements:
+                  - Produce a medium-detail diagram, not a tiny sketch.
+                  - Use 10 to 18 visible nodes for normal architecture, flowchart, or technical diagrams.
+                  - Use 14 to 28 edges when useful, but avoid clutter.
+                  - Prefer clear left-to-right or top-to-bottom layout.
+                  - Use group containers for major sections.
+                  - Use consistent spacing and aligned columns.
+                  - Use readable labels, short line breaks, and balanced box sizes.
+                  - Use a restrained but useful color palette:
+                    blue for input/data, green for processing, yellow for core modules, red/pink for output/errors, purple for final results.
+                  - Avoid overlapping nodes.
+                  - Avoid long diagonal edges.
+                  - Put an optional title at the top if it improves the diagram.
+
+                  For neural network, AI, system architecture, or algorithm diagrams:
+                  - show the main pipeline
+                  - show important internal modules
+                  - show data flow arrows
+                  - show repeated stacks as labeled grouped modules
+                  - include side annotations only if they improve clarity
+
+                  Keep the XML concise enough to answer quickly, but make the diagram visually useful.
 
             agent-workflows:
-              # 定义一个循环工作流（示例），用于反复优化绘图（需要在 instruction 中支持反馈机制才能生效）
-              - type: loop
-                name: loop_refinement
-                description: 循环优化绘图结果
-                max-iterations: 3
-                sub-agents:
-                  - agent_drawer
-                  - agent_reviewer
-
-              # 定义一个并行工作流（示例），可以并行生成多个方案（需要后续有 Agent 进行选择）
-              - type: parallel
-                name: parallel_generation
-                description: 并行生成多个绘图方案
-                sub-agents:
-                  - agent_drawer
-              #                  - agent_drawer
-
-              # 定义一个串行工作流，按顺序执行分析、绘图、检查
               - type: sequential
                 name: sequential_draw_process
-                description: 标准绘图流程：分析 -> 绘图 -> 检查
+                description: Direct full Draw.io XML generation.
                 sub-agents:
-                  - agent_analyst
-                  - agent_drawer
-            #                  - agent_reviewer
+                  - agent_drawio_direct
 
             runner:
-              # 指定入口为串行工作流，这是最稳健的配置
               agent-name: sequential_draw_process
               plugin-name-list:
                 - myTestPlugin
