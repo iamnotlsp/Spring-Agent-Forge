@@ -17,6 +17,7 @@ spring:
   config:
     import:
       - classpath:agent/agent-draw-io.yml
+      - classpath:agent/agent-draw-io-vision.yml
   #      - classpath:agent/test-agent.yml
   #      - classpath:agent/test-agent2.yml
   #      - classpath:agent/qwen-agent.yml

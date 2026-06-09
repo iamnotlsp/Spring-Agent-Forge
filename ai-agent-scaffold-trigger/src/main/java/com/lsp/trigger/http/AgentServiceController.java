@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.lsp.api.IAgentService;
 import com.lsp.api.dto.*;
 import com.lsp.api.response.Response;
+import com.lsp.domain.agent.model.entity.ChatCommandEntity;
 import com.lsp.domain.agent.model.valobj.AiAgentConfigTableVO;
 import com.lsp.domain.agent.service.IChatService;
 import com.lsp.types.enums.ResponseCode;
@@ -11,10 +12,10 @@ import com.lsp.types.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import javax.annotation.Resource;
+import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,8 +25,10 @@ import java.util.stream.Collectors;
 @CrossOrigin(origins = "*")
 public class AgentServiceController implements IAgentService {
 
+
     @Resource
     private IChatService chatService;
+
 
     @RequestMapping(value = "query_ai_agent_config_list", method = RequestMethod.GET)
     @Override
@@ -138,7 +141,7 @@ public class AgentServiceController implements IAgentService {
                     .info(e.getInfo())
                     .build();
         } catch (Exception e) {
-            log.error("智能体对话败 agentId:{} userId:{}", requestDTO.getAgentId(), requestDTO.getUserId(), e);
+            log.error("智能体对话失败 agentId:{} userId:{}", requestDTO.getAgentId(), requestDTO.getUserId(), e);
             return Response.<ChatResponseDTO>builder()
                     .code(ResponseCode.UN_ERROR.getCode())
                     .info(ResponseCode.UN_ERROR.getInfo())
@@ -178,6 +181,95 @@ public class AgentServiceController implements IAgentService {
             emitter.completeWithError(e);
         }
         return emitter;
+    }
+
+
+    @RequestMapping(value = "analyze_diagram_image", method = RequestMethod.POST)
+    public Response<ChatResponseDTO> analyzeDiagramImage(@RequestBody AnalyzeDiagramImageRequestDTO requestDTO) {
+
+        try {
+            String sessionId = requestDTO.getSessionId();
+            if (sessionId == null || sessionId.isEmpty()) {
+                sessionId = chatService.createSession(requestDTO.getAgentId(), requestDTO.getUserId());
+            }
+
+            ImageData imageData = parseImageDataUrl(requestDTO.getImageDataUrl());
+
+            ChatCommandEntity chatCommandEntity = ChatCommandEntity.builder()
+                    .agentId(requestDTO.getAgentId())
+                    .userId(requestDTO.getUserId())
+                    .sessionId(sessionId)
+                    .texts(List.of(new ChatCommandEntity.Content.Text(requestDTO.getMessage())))
+                    .files(List.of())
+                    .inlineDatas(List.of(
+                            new ChatCommandEntity.Content.InlineData(
+                                    imageData.bytes(),
+                                    imageData.mimeType()
+                            )
+                    ))
+                    .build();
+
+            log.info("inlineDatas size:{}", chatCommandEntity.getInlineDatas().size());
+
+
+            List<String> messages = chatService.handleMessage(chatCommandEntity);
+            ChatResponseDTO responseDTO = new ChatResponseDTO();
+            try {
+                // 把智能体返回的最后一条消息，尽量解析成 ChatResponseDTO，方便前端判断是普通文本回复，还是 draw.io 图表数据
+                String result = messages.stream().reduce((first, second) -> second).orElse("");
+                ChatResponseDTO parsed = JSON.parseObject(result, ChatResponseDTO.class);
+                if (null != parsed) {
+                    responseDTO = parsed;
+                    // 如果解析后的对象 type 为空，则默认为 user
+                    if (null == responseDTO.getType()) {
+                        responseDTO.setType("user");
+                    }
+                } else {
+                    responseDTO.setType("user");
+                    responseDTO.setContent(String.join("\n", messages));
+                }
+            } catch (Exception e) {
+                responseDTO.setType("user");
+                responseDTO.setContent(String.join("\n", messages));
+            }
+
+            return Response.<ChatResponseDTO>builder()
+                    .code(ResponseCode.SUCCESS.getCode())
+                    .info(ResponseCode.SUCCESS.getInfo())
+                    .data(responseDTO)
+                    .build();
+
+        } catch (AppException e) {
+            return Response.<ChatResponseDTO>builder()
+                    .code(e.getCode())
+                    .info(e.getInfo())
+                    .build();
+
+        } catch (Exception e) {
+            return Response.<ChatResponseDTO>builder()
+                    .code(ResponseCode.UN_ERROR.getCode())
+                    .info(ResponseCode.UN_ERROR.getInfo())
+                    .build();
+        }
+    }
+
+
+    private ImageData parseImageDataUrl(String imageDataUrl) {
+        int mimeStart = imageDataUrl.indexOf(':');
+        int mimeEnd = imageDataUrl.indexOf(';');
+        int dataStart = imageDataUrl.indexOf(',');
+
+        if (mimeStart < 0 || mimeEnd < 0 || dataStart < 0 || dataStart <= mimeEnd) {
+            throw new IllegalArgumentException("图片格式不正确，请上传 Base64 Data URL 图片。");
+        }
+
+        String mimeType = imageDataUrl.substring(mimeStart + 1, mimeEnd);
+        String base64 = imageDataUrl.substring(dataStart + 1);
+        byte[] bytes = Base64.getDecoder().decode(base64);
+        return new ImageData(bytes, mimeType);
+    }
+
+    private record ImageData(byte[] bytes, String mimeType) {
     }
 
 }

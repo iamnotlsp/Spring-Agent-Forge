@@ -63,8 +63,10 @@ public class ChatService implements IChatService {
         String appName = aiAgentRegisterVO.getAppName();
         InMemoryRunner runner = aiAgentRegisterVO.getRunner();
 
-        return userSessions.computeIfAbsent(userId, uid -> {
-            Session session = runner.sessionService().createSession(appName, uid)
+        String sessionKey = agentId + ":" + userId;
+
+        return userSessions.computeIfAbsent(sessionKey, key -> {
+            Session session = runner.sessionService().createSession(appName, userId)
                     .blockingGet();
             return session.id();
         });
@@ -130,6 +132,37 @@ public class ChatService implements IChatService {
             throw new AppException(ResponseCode.E0001.getCode());
         }
 
+        Content content = buildContent(chatCommandEntity);
+
+        // 获取运行体
+        InMemoryRunner runner = aiAgentRegisterVO.getRunner();
+
+        Flowable<Event> events = runner.runAsync(chatCommandEntity.getUserId(), chatCommandEntity.getSessionId(), content);
+
+        List<String> outputs = new ArrayList<>();
+        events.blockingForEach(event -> outputs.add(event.stringifyContent()));
+
+        return outputs;
+    }
+
+    @Override
+    public Flowable<Event> handleMessageStream(ChatCommandEntity chatCommandEntity) {
+        AiAgentRegisterVO aiAgentRegisterVO = defaultArmoryFactory.getAiAgentRegisterVO(chatCommandEntity.getAgentId());
+
+        if (null == aiAgentRegisterVO) {
+            throw new AppException(ResponseCode.E0001.getCode());
+        }
+
+        InMemoryRunner runner = aiAgentRegisterVO.getRunner();
+        Content content = buildContent(chatCommandEntity);
+
+        RunConfig runConfig = RunConfig.builder()
+                .streamingMode(RunConfig.StreamingMode.SSE)
+                .build();
+        return runner.runAsync(chatCommandEntity.getUserId(), chatCommandEntity.getSessionId(), content, runConfig);
+    }
+
+    private Content buildContent(ChatCommandEntity chatCommandEntity) {
         List<Part> parts = new ArrayList<>();
 
         List<ChatCommandEntity.Content.Text> texts = chatCommandEntity.getTexts();
@@ -153,17 +186,7 @@ public class ChatService implements IChatService {
             }
         }
 
-        Content content = Content.builder().role("user").parts(parts).build();
-
-        // 获取运行体
-        InMemoryRunner runner = aiAgentRegisterVO.getRunner();
-
-        Flowable<Event> events = runner.runAsync(chatCommandEntity.getUserId(), chatCommandEntity.getSessionId(), content);
-
-        List<String> outputs = new ArrayList<>();
-        events.blockingForEach(event -> outputs.add(event.stringifyContent()));
-
-        return outputs;
+        return Content.builder().role("user").parts(parts).build();
     }
 
 }

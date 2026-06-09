@@ -44,4 +44,9 @@ public interface IChatService {
      */
     List<String> handleMessage(ChatCommandEntity chatCommandEntity);
 
+    /**
+     * 以事件流形式处理结构化聊天命令，支持文本、文件 URI、内联二进制数据等多种输入内容。
+     */
+    Flowable<Event> handleMessageStream(ChatCommandEntity chatCommandEntity);
+
 }

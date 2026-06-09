@@ -1,0 +1,49 @@
+ai:
+  agent:
+    config:
+      tables:
+        visionDrawIoAgent:
+          app-name: visionDrawIoAgent
+          agent:
+            agent-id: 300001
+            agent-name: visionDrawIoAgent
+            agent-desc: Image diagram recognition agent for Draw.io generation
+          module:
+            ai-api:
+              base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+              api-key: ${DASHSCOPE_API_KEY}
+              completions-path: /chat/completions
+              embeddings-path: /embeddings
+            chat-model:
+              model: qwen3.7-plus
+
+            agents:
+              - name: agent_image_to_drawio_direct
+                description: 根据上传的图表图片直接生成 Draw.io XML。
+                instruction: |
+                  你是一个 draw.io 图表生成助手。
+
+                  请根据用户上传的图片，生成一份可以导入 draw.io 的 XML。
+
+                  要求：
+                  1. 只返回 JSON，不要 Markdown，不要解释。
+                  2. JSON 格式固定为：{"type":"drawio","content":"完整的 mxfile XML"}
+                  3. content 必须是完整的 <mxfile> 文档。
+                  4. 图中只保留主要节点和主要连线，不要逐像素复刻。
+                  5. 如果图片内容很多，请合并相似节点，最多生成 16 个主要节点。
+                  6. 所有文字横向显示，不要旋转文字。
+                  7. 节点之间不要重叠，连线尽量使用直角线。
+                  8. XML 不要放进代码块。
+                  9. 本次必须一次性完成，不要请求补充信息。
+
+            agent-workflows:
+              - type: sequential
+                name: vision_image_to_drawio_process
+                description: Image diagram recognition and Draw.io XML generation
+                sub-agents:
+                  - agent_image_to_drawio_direct
+
+            runner:
+              agent-name: agent_image_to_drawio_direct
+              plugin-name-list:
+                - myTestPlugin

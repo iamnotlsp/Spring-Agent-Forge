@@ -15,7 +15,7 @@ ai:
               completions-path: /chat/completions
               embeddings-path: /embeddings
             chat-model:
-              model: qwen3.6-plus
+              model: qwen3.7-plus
               tool-mcp-list:
                 - sse:
                     name: baidu-search
