@@ -1,0 +1,113 @@
+ai:
+  agent:
+    config:
+      tables:
+        visionDrawIoAgentWithXmlSpecSkill:
+          app-name: visionDrawIoAgentWithXmlSpecSkill
+          agent:
+            agent-id: 300101
+            agent-name: visionDrawIoAgentWithXmlSpecSkill
+            agent-desc: Image diagram recognition agent with drawio-xml-spec skill
+          module:
+            ai-api:
+              base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+              api-key: ${DASHSCOPE_API_KEY}
+              completions-path: /chat/completions
+              embeddings-path: /embeddings
+            chat-model:
+              model: qwen3.7-plus
+              tool-skills-list:
+                - type: resource
+                  path: agent/skills/drawio-xml-spec.md
+
+            agents:
+              - name: agent_image_to_drawio_with_xml_spec
+                description: Convert uploaded diagram images into stable Draw.io XML with XML-spec skill support.
+                instruction: |
+                  You are a Draw.io diagram generation assistant.
+
+                  Use the drawio-xml-spec skill whenever you need to produce Draw.io XML.
+                  Read the uploaded image, extract the main nodes, groups, and connections, then generate an editable Draw.io diagram.
+
+                  Return JSON only. Do not return markdown, comments, or explanations.
+
+                  The response format must be exactly:
+                  {"type":"drawio","content":"FULL_MXFILE_XML"}
+
+                  Image-to-diagram requirements:
+                  - Preserve the main diagram meaning, not pixel-level appearance.
+                  - Keep only major nodes and major edges.
+                  - Merge repeated or similar nodes when the image is too dense.
+                  - Use no more than 16 main visible nodes for complex images.
+                  - Keep all labels horizontal.
+                  - Prefer orthogonal connectors.
+                  - Do not ask follow-up questions for image input.
+
+                  XML stability requirements:
+                  - The content field must contain one complete <mxfile> document.
+                  - Follow the drawio-xml-spec skill for mxfile structure, mxCell rules, geometry rules, edge rules, escaping, and output cleanup.
+
+            agent-workflows:
+              - type: sequential
+                name: vision_image_to_drawio_xml_spec_process
+                description: Image diagram recognition and Draw.io XML generation with drawio-xml-spec skill.
+                sub-agents:
+                  - agent_image_to_drawio_with_xml_spec
+
+            runner:
+              agent-name: vision_image_to_drawio_xml_spec_process
+              plugin-name-list:
+                - myTestPlugin
+
+        drawIoRepairAgentWithSkill:
+          app-name: drawIoRepairAgentWithSkill
+          agent:
+            agent-id: 300102
+            agent-name: drawIoRepairAgentWithSkill
+            agent-desc: Draw.io XML repair agent with drawio-repair skill
+          module:
+            ai-api:
+              base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+              api-key: ${DASHSCOPE_API_KEY}
+              completions-path: /chat/completions
+              embeddings-path: /embeddings
+            chat-model:
+              model: qwen3.7-plus
+              tool-skills-list:
+                - type: resource
+                  path: agent/skills/drawio-repair.md
+
+            agents:
+              - name: agent_drawio_repair_only
+                description: Repair invalid Draw.io JSON or XML based on harness diagnostics.
+                instruction: |
+                  You are a Draw.io XML repair agent.
+
+                  Use the drawio-repair skill to repair invalid JSON, invalid XML, incomplete Draw.io XML, duplicate ids, missing geometry, missing edge endpoints, bad XML escaping, or layout defects reported by a harness.
+
+                  Input may contain:
+                  - the original user request
+                  - raw model output
+                  - broken JSON or XML
+                  - harness diagnostics
+                  - validation issues
+
+                  Return JSON only. Do not return markdown, comments, diagnostics, or explanations.
+
+                  The repaired response format must be exactly:
+                  {"type":"drawio","content":"REPAIRED_FULL_MXFILE_XML"}
+
+                  If the input cannot be repaired into a meaningful Draw.io diagram, return exactly:
+                  {"type":"user","content":"The diagram output could not be repaired. Please regenerate it from the original request."}
+
+            agent-workflows:
+              - type: sequential
+                name: drawio_repair_only_process
+                description: Repair invalid Draw.io output.
+                sub-agents:
+                  - agent_drawio_repair_only
+
+            runner:
+              agent-name: drawio_repair_only_process
+              plugin-name-list:
+                - myTestPlugin

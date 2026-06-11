@@ -9,9 +9,11 @@ import com.google.genai.types.Part;
 import com.lsp.domain.agent.model.entity.ChatCommandEntity;
 import com.lsp.domain.agent.model.valobj.AiAgentConfigTableVO;
 import com.lsp.domain.agent.model.valobj.AiAgentRegisterVO;
+import com.lsp.domain.agent.model.valobj.harness.DrawioDiagnosticResult;
 import com.lsp.domain.agent.model.valobj.properties.AiAgentAutoConfigProperties;
 import com.lsp.domain.agent.service.IChatService;
 import com.lsp.domain.agent.service.armory.factory.DefaultArmoryFactory;
+import com.lsp.domain.agent.service.harness.DrawioOutputDiagnosticService;
 import com.lsp.types.enums.ResponseCode;
 import com.lsp.types.exception.AppException;
 import io.reactivex.rxjava3.core.Flowable;
@@ -33,6 +35,9 @@ public class ChatService implements IChatService {
 
     @Resource
     private AiAgentAutoConfigProperties aiAgentAutoConfigProperties;
+
+    @Resource
+    private DrawioOutputDiagnosticService drawioOutputDiagnosticService;
 
     private final Map<String, String> userSessions = new ConcurrentHashMap<>();
 
@@ -103,6 +108,14 @@ public class ChatService implements IChatService {
         List<String> outputs = new ArrayList<>();
         events.blockingForEach(event -> outputs.add(event.stringifyContent()));
 
+        if ("300000".equals(agentId) || "300001".equals(agentId) || "300101".equals(agentId)) {
+            String result = outputs.stream().reduce((first, second) -> second).orElse("");
+            DrawioDiagnosticResult diagnosticResult = drawioOutputDiagnosticService.diagnose(result);
+            if (!diagnosticResult.isValid()) {
+                // todo：调用 repair agent
+            }
+        }
+
         return outputs;
     }
 
@@ -141,6 +154,15 @@ public class ChatService implements IChatService {
 
         List<String> outputs = new ArrayList<>();
         events.blockingForEach(event -> outputs.add(event.stringifyContent()));
+
+        if ("300000".equals(chatCommandEntity.getAgentId()) || "300001".equals(chatCommandEntity.getAgentId())
+                || "300101".equals(chatCommandEntity.getAgentId())) {
+            String result = outputs.stream().reduce((first, second) -> second).orElse("");
+            DrawioDiagnosticResult diagnosticResult = drawioOutputDiagnosticService.diagnose(result);
+            if (!diagnosticResult.isValid()) {
+                // todo：调用 repair agent
+            }
+        }
 
         return outputs;
     }
