@@ -1,6 +1,7 @@
 package com.lsp;
 
 import com.lsp.domain.agent.service.armory.tool.mcp.server.MyTestMcpService;
+import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.beans.factory.annotation.Configurable;
@@ -10,6 +11,7 @@ import org.springframework.context.annotation.Bean;
 
 @SpringBootApplication
 @Configurable
+@EnableRabbit
 public class Application {
 
     public static void main(String[] args){

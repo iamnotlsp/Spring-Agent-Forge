@@ -24,6 +24,8 @@ public interface IChatService {
      */
     String createSession(String agentId, String userId);
 
+    String recreateSession(String agentId, String userId);
+
     /**
      * 发送纯文本消息并执行智能体；如果用户没有会话，则自动创建会话。
      */

@@ -24,8 +24,8 @@ spring:
 
   datasource:
     username: root
-    password: 123456
-    url: jdbc:mysql://127.0.0.1:3306/xfg_frame_archetype?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&serverTimezone=UTC&useSSL=true
+    password: Lsp1160096212
+    url: jdbc:mysql://127.0.0.1:3306/draw_io_agent?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai&useSSL=true
     driver-class-name: com.mysql.cj.jdbc.Driver
   hikari:
     pool-name: Retail_HikariCP
@@ -37,11 +37,34 @@ spring:
     connection-timeout: 30000 #数据库连接超时时间,默认30秒，即30000
     connection-test-query: SELECT 1
   type: com.zaxxer.hikari.HikariDataSource
+  # RabbitMQ；消费 group-buy-market 的拼团成团消息
+  rabbitmq:
+    addresses: 120.26.118.142
+    port: 5672
+    username: lsp
+    password: Lsp1160096212
+    listener:
+      simple:
+        prefetch: 1
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 1000ms
+          multiplier: 2.0
+          max-interval: 10000ms
+    template:
+      delivery-mode: persistent
+    config:
+      producer:
+        exchange: group_buy_market_exchange
+        topic_team_success:
+          routing_key: topic.team_success
+          queue: drawio_agent_queue_2_topic_team_success
 
-# MyBatis 配置【如需使用记得打开】
-#mybatis:
-#  mapper-locations: classpath:/mybatis/mapper/*.xml
-#  config-location:  classpath:/mybatis/config/mybatis-config.xml
+# MyBatis 配置
+mybatis:
+  mapper-locations: classpath:/mybatis/mapper/*.xml
+  config-location: classpath:/mybatis/config/mybatis-config.xml
 
 # 日志
 logging:

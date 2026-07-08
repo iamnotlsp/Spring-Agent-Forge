@@ -59,6 +59,19 @@ public class ChatService implements IChatService {
 
     @Override
     public String createSession(String agentId, String userId) {
+        String sessionKey = buildSessionKey(agentId, userId);
+        return userSessions.computeIfAbsent(sessionKey, key -> createNewSession(agentId, userId));
+    }
+
+    @Override
+    public String recreateSession(String agentId, String userId) {
+        String sessionKey = buildSessionKey(agentId, userId);
+        String sessionId = createNewSession(agentId, userId);
+        userSessions.put(sessionKey, sessionId);
+        return sessionId;
+    }
+
+    private String createNewSession(String agentId, String userId) {
         AiAgentRegisterVO aiAgentRegisterVO = defaultArmoryFactory.getAiAgentRegisterVO(agentId);
 
         if (null == aiAgentRegisterVO) {
@@ -68,13 +81,13 @@ public class ChatService implements IChatService {
         String appName = aiAgentRegisterVO.getAppName();
         InMemoryRunner runner = aiAgentRegisterVO.getRunner();
 
-        String sessionKey = agentId + ":" + userId;
+        Session session = runner.sessionService().createSession(appName, userId)
+                .blockingGet();
+        return session.id();
+    }
 
-        return userSessions.computeIfAbsent(sessionKey, key -> {
-            Session session = runner.sessionService().createSession(appName, userId)
-                    .blockingGet();
-            return session.id();
-        });
+    private String buildSessionKey(String agentId, String userId) {
+        return agentId + ":" + userId;
     }
 
     @Override

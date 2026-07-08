@@ -11,6 +11,8 @@ public class AnalyzeDiagramImageRequestDTO {
 
     private String sessionId;
 
+    private String requestId;
+
     private String message;
 
     /**

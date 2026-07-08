@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lsp.infrastructure.dao.ICreditUseRecordDao">
+
+    <resultMap id="dataMap" type="com.lsp.infrastructure.dao.po.CreditUseRecord">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="request_id" property="requestId"/>
+        <result column="agent_id" property="agentId"/>
+        <result column="session_id" property="sessionId"/>
+        <result column="duration_ms" property="durationMs"/>
+        <result column="used_credits" property="usedCredits"/>
+        <result column="use_status" property="useStatus"/>
+        <result column="remark" property="remark"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <select id="queryByRequestId" parameterType="java.lang.String" resultMap="dataMap">
+        select id, user_id, request_id, agent_id, session_id, duration_ms, used_credits,
+               use_status, remark, create_time, update_time
+        from credit_use_record
+        where request_id = #{requestId}
+        limit 1
+    </select>
+
+    <insert id="insert" parameterType="com.lsp.infrastructure.dao.po.CreditUseRecord">
+        insert into credit_use_record(
+            user_id, request_id, agent_id, session_id, duration_ms, used_credits,
+            use_status, remark, create_time, update_time
+        ) values (
+            #{userId}, #{requestId}, #{agentId}, #{sessionId}, #{durationMs}, #{usedCredits},
+            #{useStatus}, #{remark}, now(), now()
+        )
+    </insert>
+
+</mapper>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lsp.infrastructure.dao.ICreditGrantRecordDao">
+
+    <resultMap id="dataMap" type="com.lsp.infrastructure.dao.po.CreditGrantRecord">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="team_id" property="teamId"/>
+        <result column="out_trade_no" property="outTradeNo"/>
+        <result column="credits" property="credits"/>
+        <result column="grant_type" property="grantType"/>
+        <result column="grant_status" property="grantStatus"/>
+        <result column="grant_time" property="grantTime"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <select id="queryGrantedRecord" parameterType="java.lang.String" resultMap="dataMap">
+        select id, user_id, team_id, out_trade_no, credits, grant_type, grant_status,
+               grant_time, create_time, update_time
+        from credit_grant_record
+        where out_trade_no = #{outTradeNo} and grant_status = 'SUCCESS'
+        limit 1
+    </select>
+
+    <insert id="insert" parameterType="com.lsp.infrastructure.dao.po.CreditGrantRecord">
+        insert into credit_grant_record(
+            user_id, team_id, out_trade_no, credits, grant_type, grant_status,
+            grant_time, create_time, update_time
+        ) values (
+            #{userId}, #{teamId}, #{outTradeNo}, #{credits}, #{grantType}, #{grantStatus},
+            #{grantTime}, now(), now()
+        )
+    </insert>
+
+</mapper>

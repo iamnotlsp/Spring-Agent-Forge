@@ -8,6 +8,7 @@ public class ChatRequestDTO {
     private String agentId;
     private String userId;
     private String sessionId;
+    private String requestId;
     private String message;
 
 }

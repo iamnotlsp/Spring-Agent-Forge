@@ -7,6 +7,9 @@ import com.lsp.api.response.Response;
 import com.lsp.domain.agent.model.entity.ChatCommandEntity;
 import com.lsp.domain.agent.model.valobj.AiAgentConfigTableVO;
 import com.lsp.domain.agent.service.IChatService;
+import com.lsp.domain.credit.model.entity.CreditAccountEntity;
+import com.lsp.domain.credit.model.entity.CreditUseEntity;
+import com.lsp.domain.credit.service.ICreditService;
 import com.lsp.types.enums.ResponseCode;
 import com.lsp.types.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
@@ -15,8 +18,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import javax.annotation.Resource;
+import java.math.BigDecimal;
 import java.util.Base64;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -28,6 +33,9 @@ public class AgentServiceController implements IAgentService {
 
     @Resource
     private IChatService chatService;
+
+    @Resource
+    private ICreditService creditService;
 
 
     @RequestMapping(value = "query_ai_agent_config_list", method = RequestMethod.GET)
@@ -102,17 +110,32 @@ public class AgentServiceController implements IAgentService {
     public Response<ChatResponseDTO> chat(@RequestBody ChatRequestDTO requestDTO) {
         try {
             log.info("智能体对话 agentId:{} userId:{}", requestDTO.getAgentId(), requestDTO.getUserId());
+            if (!hasAvailableCredits(requestDTO.getUserId())) {
+                return buildInsufficientCreditsResponse();
+            }
+
             String sessionId = requestDTO.getSessionId();
             if (sessionId == null || sessionId.isEmpty()) {
                 sessionId = chatService.createSession(requestDTO.getAgentId(), requestDTO.getUserId());
             }
 
-            List<String> messages = chatService.handleMessage(requestDTO.getAgentId(), requestDTO.getUserId(), sessionId, requestDTO.getMessage());
+            String requestId = resolveRequestId(requestDTO.getRequestId());
+            long startedAt = System.currentTimeMillis();
+            ChatRunResult chatRunResult = runChatWithSessionRecovery(
+                    requestDTO.getAgentId(),
+                    requestDTO.getUserId(),
+                    sessionId,
+                    requestDTO.getMessage());
+            sessionId = chatRunResult.sessionId();
+            List<String> messages = chatRunResult.messages();
+            long durationMs = System.currentTimeMillis() - startedAt;
 
             ChatResponseDTO responseDTO = new ChatResponseDTO();
+            String fallbackResult = findLastNonBlankMessage(messages);
             try {
                 // 把智能体返回的最后一条消息，尽量解析成 ChatResponseDTO，方便前端判断是普通文本回复，还是 draw.io 图表数据
-                String result = messages.stream().reduce((first, second) -> second).orElse("");
+                String result = findLastNonBlankMessage(messages);
+                log.info("智能体返回消息数量:{} 最终内容长度:{}", null == messages ? 0 : messages.size(), result.length());
                 ChatResponseDTO parsed = JSON.parseObject(result, ChatResponseDTO.class);
                 if (null != parsed) {
                     responseDTO = parsed;
@@ -122,12 +145,14 @@ public class AgentServiceController implements IAgentService {
                     }
                 } else {
                     responseDTO.setType("user");
-                    responseDTO.setContent(String.join("\n", messages));
+                    responseDTO.setContent(fallbackResult);
                 }
             } catch (Exception e) {
                 responseDTO.setType("user");
-                responseDTO.setContent(String.join("\n", messages));
+                responseDTO.setContent(fallbackResult);
             }
+
+            fillCreditUsage(responseDTO, requestDTO.getUserId(), requestId, requestDTO.getAgentId(), sessionId, durationMs, "chat");
 
             return Response.<ChatResponseDTO>builder()
                     .code(ResponseCode.SUCCESS.getCode())
@@ -188,6 +213,10 @@ public class AgentServiceController implements IAgentService {
     public Response<ChatResponseDTO> analyzeDiagramImage(@RequestBody AnalyzeDiagramImageRequestDTO requestDTO) {
 
         try {
+            if (!hasAvailableCredits(requestDTO.getUserId())) {
+                return buildInsufficientCreditsResponse();
+            }
+
             String sessionId = requestDTO.getSessionId();
             if (sessionId == null || sessionId.isEmpty()) {
                 sessionId = chatService.createSession(requestDTO.getAgentId(), requestDTO.getUserId());
@@ -212,11 +241,18 @@ public class AgentServiceController implements IAgentService {
             log.info("inlineDatas size:{}", chatCommandEntity.getInlineDatas().size());
 
 
-            List<String> messages = chatService.handleMessage(chatCommandEntity);
+            String requestId = resolveRequestId(requestDTO.getRequestId());
+            long startedAt = System.currentTimeMillis();
+            ChatRunResult chatRunResult = runChatCommandWithSessionRecovery(chatCommandEntity);
+            sessionId = chatRunResult.sessionId();
+            List<String> messages = chatRunResult.messages();
+            long durationMs = System.currentTimeMillis() - startedAt;
             ChatResponseDTO responseDTO = new ChatResponseDTO();
+            String fallbackResult = findLastNonBlankMessage(messages);
             try {
                 // 把智能体返回的最后一条消息，尽量解析成 ChatResponseDTO，方便前端判断是普通文本回复，还是 draw.io 图表数据
-                String result = messages.stream().reduce((first, second) -> second).orElse("");
+                String result = findLastNonBlankMessage(messages);
+                log.info("智能体返回消息数量:{} 最终内容长度:{}", null == messages ? 0 : messages.size(), result.length());
                 ChatResponseDTO parsed = JSON.parseObject(result, ChatResponseDTO.class);
                 if (null != parsed) {
                     responseDTO = parsed;
@@ -226,12 +262,14 @@ public class AgentServiceController implements IAgentService {
                     }
                 } else {
                     responseDTO.setType("user");
-                    responseDTO.setContent(String.join("\n", messages));
+                    responseDTO.setContent(fallbackResult);
                 }
             } catch (Exception e) {
                 responseDTO.setType("user");
-                responseDTO.setContent(String.join("\n", messages));
+                responseDTO.setContent(fallbackResult);
             }
+
+            fillCreditUsage(responseDTO, requestDTO.getUserId(), requestId, requestDTO.getAgentId(), sessionId, durationMs, "analyze_diagram_image");
 
             return Response.<ChatResponseDTO>builder()
                     .code(ResponseCode.SUCCESS.getCode())
@@ -267,6 +305,103 @@ public class AgentServiceController implements IAgentService {
         String base64 = imageDataUrl.substring(dataStart + 1);
         byte[] bytes = Base64.getDecoder().decode(base64);
         return new ImageData(bytes, mimeType);
+    }
+
+    private String findLastNonBlankMessage(List<String> messages) {
+        if (null == messages || messages.isEmpty()) {
+            return "";
+        }
+
+        for (int index = messages.size() - 1; index >= 0; index--) {
+            String message = messages.get(index);
+            if (null != message && !message.isBlank()) {
+                return message;
+            }
+        }
+
+        return "";
+    }
+
+    private ChatRunResult runChatWithSessionRecovery(String agentId, String userId, String sessionId, String message) {
+        try {
+            return new ChatRunResult(sessionId, chatService.handleMessage(agentId, userId, sessionId, message));
+        } catch (IllegalArgumentException e) {
+            if (!isSessionNotFound(e)) {
+                throw e;
+            }
+
+            String freshSessionId = chatService.recreateSession(agentId, userId);
+            log.warn("ADK session missing, recreated session. agentId:{} userId:{} oldSessionId:{} newSessionId:{}",
+                    agentId, userId, sessionId, freshSessionId);
+            return new ChatRunResult(freshSessionId, chatService.handleMessage(agentId, userId, freshSessionId, message));
+        }
+    }
+
+    private ChatRunResult runChatCommandWithSessionRecovery(ChatCommandEntity chatCommandEntity) {
+        try {
+            return new ChatRunResult(chatCommandEntity.getSessionId(), chatService.handleMessage(chatCommandEntity));
+        } catch (IllegalArgumentException e) {
+            if (!isSessionNotFound(e)) {
+                throw e;
+            }
+
+            String freshSessionId = chatService.recreateSession(chatCommandEntity.getAgentId(), chatCommandEntity.getUserId());
+            log.warn("ADK session missing, recreated image session. agentId:{} userId:{} oldSessionId:{} newSessionId:{}",
+                    chatCommandEntity.getAgentId(), chatCommandEntity.getUserId(), chatCommandEntity.getSessionId(), freshSessionId);
+            chatCommandEntity.setSessionId(freshSessionId);
+            return new ChatRunResult(freshSessionId, chatService.handleMessage(chatCommandEntity));
+        }
+    }
+
+    private boolean isSessionNotFound(Exception e) {
+        return null != e.getMessage() && e.getMessage().contains("Session not found");
+    }
+
+    private boolean hasAvailableCredits(String userId) {
+        if (null == userId || userId.isBlank()) {
+            return false;
+        }
+
+        CreditAccountEntity creditAccountEntity = creditService.queryCreditAccount(userId);
+        return null != creditAccountEntity
+                && null != creditAccountEntity.getAvailableCredits()
+                && creditAccountEntity.getAvailableCredits().compareTo(BigDecimal.ZERO) > 0;
+    }
+
+    private Response<ChatResponseDTO> buildInsufficientCreditsResponse() {
+        return Response.<ChatResponseDTO>builder()
+                .code(ResponseCode.ILLEGAL_PARAMETER.getCode())
+                .info("额度不足，请购买额度后继续使用")
+                .build();
+    }
+
+    private String resolveRequestId(String requestId) {
+        if (null != requestId && !requestId.isBlank()) {
+            return requestId.trim();
+        }
+
+        return UUID.randomUUID().toString().replace("-", "");
+    }
+
+    private void fillCreditUsage(ChatResponseDTO responseDTO, String userId, String requestId, String agentId,
+                                 String sessionId, long durationMs, String remark) {
+        CreditUseEntity creditUseEntity = creditService.consumeCredits(userId, requestId, agentId, sessionId, durationMs, remark);
+        responseDTO.setSessionId(sessionId);
+        responseDTO.setRequestId(requestId);
+        responseDTO.setDurationMs(durationMs);
+        responseDTO.setCostCredits(toInt(creditUseEntity.getUsedCredits()));
+        responseDTO.setRemainingCredits(toInt(creditUseEntity.getRemainingCredits()));
+    }
+
+    private int toInt(BigDecimal value) {
+        if (null == value) {
+            return 0;
+        }
+
+        return value.intValue();
+    }
+
+    private record ChatRunResult(String sessionId, List<String> messages) {
     }
 
     private record ImageData(byte[] bytes, String mimeType) {

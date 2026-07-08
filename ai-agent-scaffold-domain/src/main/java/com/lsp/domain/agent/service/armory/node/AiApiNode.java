@@ -9,7 +9,9 @@ import com.lsp.domain.agent.service.armory.factory.DefaultArmoryFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
 
 import javax.annotation.Resource;
 
@@ -27,12 +29,17 @@ public class AiApiNode extends AbstractArmorySupport {
         AiAgentConfigTableVO aiAgentConfigTableVO = requestParameter.getAiAgentConfigTableVO();
         //得到大模型基础配置
         AiAgentConfigTableVO.Module.AiApi aiApiConfig = aiAgentConfigTableVO.getModule().getAiApi();
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(aiApiConfig.getConnectTimeout());
+        requestFactory.setReadTimeout(aiApiConfig.getReadTimeout());
+
         //包装建立openaiapi实例，传入上下文
         OpenAiApi openAiApi = OpenAiApi.builder()
                 .baseUrl(aiApiConfig.getBaseUrl())
                 .apiKey(aiApiConfig.getApiKey())
                 .completionsPath(StringUtils.isNotBlank(aiApiConfig.getCompletionsPath()) ? aiApiConfig.getCompletionsPath() : "v1/chat/completions")
                 .embeddingsPath(StringUtils.isNotBlank(aiApiConfig.getEmbeddingsPath()) ? aiApiConfig.getEmbeddingsPath() : "v1/embeddings")
+                .restClientBuilder(RestClient.builder().requestFactory(requestFactory))
                 .build();
 
         dynamicContext.setOpenAiApi(openAiApi);

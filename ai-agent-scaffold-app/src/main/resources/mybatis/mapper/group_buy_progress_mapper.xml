@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lsp.infrastructure.dao.IGroupBuyProgressDao">
+
+    <resultMap id="dataMap" type="com.lsp.infrastructure.dao.po.GroupBuyProgress">
+        <id column="team_id" property="teamId"/>
+        <result column="target_count" property="targetCount"/>
+        <result column="complete_count" property="completeCount"/>
+        <result column="lock_count" property="lockCount"/>
+        <result column="status" property="status"/>
+    </resultMap>
+
+    <select id="queryGroupBuyProgressByTeamIds" resultMap="dataMap">
+        select team_id, target_count, complete_count, lock_count, status
+        from group_buy_market.group_buy_order
+        where team_id in
+        <foreach item="teamId" collection="teamIds" open="(" separator="," close=")">
+            #{teamId}
+        </foreach>
+    </select>
+
+</mapper>

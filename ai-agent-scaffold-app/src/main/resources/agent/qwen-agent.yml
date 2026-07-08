@@ -14,6 +14,8 @@ ai:
               api-key: ${DASHSCOPE_API_KEY}
               completions-path: /chat/completions
               embeddings-path: /embeddings
+              connect-timeout: 10000
+              read-timeout: 120000
             chat-model:
               model: qwen3.6-plus
               tool-mcp-list:
